@@ -64,11 +64,15 @@ object Common
 	val margins = Margins((0.25.cm.toPixels / 2.0).toInt * 2)
 	
 	/**
+	 * Directory that stores the data used in this application
+	 */
+	val dataDirectory = Paths.get("data")
+	/**
 	 * The cursors used
 	 */
 	val cursors = {
 		// Loads the cursors from icon files. Logs failures.
-		val cursorDirectory = Paths.get("data/cursors")
+		val cursorDirectory = dataDirectory/"cursors"
 		import CursorType._
 		CursorSet.loadIcons(
 			Map[CursorType, (String, Point)](

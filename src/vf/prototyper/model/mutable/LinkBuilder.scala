@@ -2,6 +2,7 @@ package vf.prototyper.model.mutable
 
 import utopia.flow.view.mutable.eventful.PointerWithEvents
 import utopia.paradigm.shape.shape2d.Bounds
+import vf.prototyper.model.immutable.Link
 
 /**
  * A mutable link implementation used during view-building
@@ -26,4 +27,9 @@ class LinkBuilder(val area: Bounds, initialTarget: ViewBuilder)
 	 */
 	def target = targetPointer.value
 	def target_=(view: ViewBuilder) = targetPointer.value = view
+	
+	/**
+	 * @return An immutable copy from the current state of this builder
+	 */
+	def result = Link(area, target.id)
 }

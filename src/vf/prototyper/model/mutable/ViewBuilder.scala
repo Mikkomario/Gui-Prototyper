@@ -56,6 +56,11 @@ class ViewBuilder(val id: Int, initialName: String, val path: Path, val image: I
 	def links = linksPointer.value
 	def links_=(newLinks: Vector[LinkBuilder]) = linksPointer.value = newLinks
 	
+	/**
+	 * @return An immutable copy of the current state of this builder
+	 */
+	def result = View(id, name, path, region, links.map { _.result })
+	
 	
 	// OTHER    ----------------------------
 	

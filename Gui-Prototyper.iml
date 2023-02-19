@@ -14,5 +14,6 @@
     <orderEntry type="module" module-name="Paradigm" />
     <orderEntry type="module" module-name="Reach" />
     <orderEntry type="module" module-name="Reflection" />
+    <orderEntry type="module" module-name="BunnyMunch" />
   </component>
 </module>

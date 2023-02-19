@@ -55,7 +55,6 @@ class EditVc(original: Vector[View])
 	
 	private val isLinkSelectedPointer = currentLinkPointer.map { _.isDefined }
 	
-	// FIXME: Use of cursors makes the UI unresponsive
 	private val view = ReachCanvas(cursors) { hierarchy =>
 		// The view consists of 3 vertical elements where the 3rd is hidden at times:
 		// 1) Header
@@ -66,7 +65,6 @@ class EditVc(original: Vector[View])
 				// 1: The header contains left & right -arrows, as well as an input field for the view name
 				// Also allows for setting the view as the first view, as well as view deletion
 				// [< | View Name | 1 | Delete | >]
-				// TODO: Add delete and "first view flag" -features
 				val headerBg = primary.dark
 				val header = factories.next()(Framing).mapContext { _.inContextWithBackground(headerBg) }.build(Stack)
 					.apply(margins.small.any, customDrawers = Vector(BackgroundDrawer(headerBg))) { stackF =>
@@ -151,7 +149,6 @@ class EditVc(original: Vector[View])
 		val frame = Frame.windowed(view.parent, "Prototyper", Program, margins.medium,
 			getAnchor = Alignment.Top.origin)
 		frame.startEventGenerators(context.base.actorHandler)
-		frame.setToExitOnClose()
 		frame.visible = true
 		frame
 	}
@@ -196,9 +193,10 @@ class EditVc(original: Vector[View])
 	
 	/**
 	 * Displays this view
-	 * @return Displayed window
+	 * @return Future that resolves into edit results (views)
 	 */
-	def display() = lazyWindow.resettingValueIterator.find { !_.isClosed }.get
+	def display() =
+		lazyWindow.resettingValueIterator.find { !_.isClosed }.get.closeFuture.map { _ => views.map { _.result } }
 	
 	private def builderForId(viewId: Int) = views.find { _.id == viewId }
 	
