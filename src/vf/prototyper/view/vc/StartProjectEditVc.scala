@@ -25,13 +25,14 @@ import vf.prototyper.model.immutable.{Project, View}
 import vf.prototyper.util.Common._
 import vf.prototyper.view.Icon
 import vf.prototyper.view.component.FileDropArea
-import vf.prototyper.view.vc.StartProjectVc.acceptedFileTypes
+import vf.prototyper.view.vc.StartProjectEditVc.acceptedFileTypes
 
 import java.awt.event.KeyEvent
 import java.nio.file.Path
+import java.util.UUID
 import scala.concurrent.Future
 
-object StartProjectVc
+object StartProjectEditVc
 {
 	private val acceptedFileTypes = Set("png", "jpg", "jpeg")
 }
@@ -41,12 +42,20 @@ object StartProjectVc
  * @author Mikko Hilpinen
  * @since 19.2.2023, v0.1
  */
-class StartProjectVc
+class StartProjectEditVc(project: Option[Project] = None)
 {
 	// ATTRIBUTES   ----------------------------
 	
-	private val projectNamePointer = new PointerWithEvents("New Project")
-	private val viewFilesPointer = new PointerWithEvents(Vector[Path]())
+	private val initialPaths = project match {
+		case Some(project) => project.views.map { _.path }.toSet
+		case None => Set[Path]()
+	}
+	
+	private val projectNamePointer = new PointerWithEvents(project match {
+		case Some(project) => project.name
+		case None => "New Project"
+	})
+	private val viewFilesPointer = new PointerWithEvents(initialPaths.toVector)
 	private val windowPointer = Pointer.empty[Window[_]]()
 	
 	private var startFuture: Option[Future[Project]] = None
@@ -119,22 +128,38 @@ class StartProjectVc
 	private def start() = {
 		// Copies the view files into a separate directory
 		val projectName = projectNamePointer.value.untilFirst(".").nonEmptyOrElse("project")
-		(directory.views/projectName).unique.asExistingDirectory.map { projectDirectory =>
-			val viewFiles = viewFilesPointer.value.map { p =>
-				p.copyTo(projectDirectory, Rename).getOrMap { error => log(error, "Failed to copy a view file"); p }
-			}
-			// Displays the edit view
-			startFuture = Some(new EditVc(viewFiles.zipWithIndex
-				.map { case (path, index) => View(index, path.fileName.untilLast("."), path) }).display()
-				.map { views =>
-					// Constructs and saves the project
-					val project = Project(projectName, views)
-					(directory.projects/s"${projectName.replaceEachMatchOf(Regex.whiteSpace, "-")}.json")
-						.unique.writeJson(project)
-						.failure.foreach { log(_, "Failed to save the project") }
-					project
-				})
-			windowPointer.pop().foreach { _.close() }
+		lazy val viewsDirectory = (directory.views/projectName).asExistingDirectory.getOrMap { error =>
+			log(error, "Failed to create a sub-directory for project views")
+			directory.views
 		}
+		val newViewFiles = viewFilesPointer.value.filterNot(initialPaths.contains).map { p =>
+			if (p.isChildOf(directory.views))
+				p
+			else
+				p.copyTo(viewsDirectory, Rename).getOrMap { error => log(error, "Failed to copy a view file"); p }
+		}
+		val existingViews = project match {
+			case Some(project) => project.views
+			case None => Vector()
+		}
+		val firstNewId = existingViews.map { _.id }.maxOption.getOrElse(1)
+		val newViews = newViewFiles.zipWithIndex.map { case (path, index) =>
+			View(firstNewId + index, path.fileName.untilLast("."), path)
+		}
+		// Displays the edit view
+		startFuture = Some(new EditVc(existingViews ++ newViews).display()
+			.map { views =>
+				val newVersion = project match {
+					case Some(project) => project.copy(name = projectName, views = views)
+					case None =>
+						// Constructs and saves the project
+						val projectPath = (directory.projects/
+							s"${projectName.replaceEachMatchOf(Regex.whiteSpace, "-")}.json").unique
+						Project(UUID.randomUUID().toString, projectName, projectPath, views)
+				}
+				newVersion.save().failure.foreach { log(_, "Failed to save the project") }
+				newVersion
+			})
+		windowPointer.pop().foreach { _.close() }
 	}
 }

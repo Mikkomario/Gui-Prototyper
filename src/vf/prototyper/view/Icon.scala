@@ -48,6 +48,21 @@ object Icon
 	 * An up-facing arrow icon
 	 */
 	lazy val arrowUp = arrowDown.map { _.flippedVertically }
+	
+	/**
+	 * A circular add icon
+	 */
+	lazy val addCircle = load("add-circle")
+	
+	/**
+	 * An icon for editing
+	 */
+	lazy val edit = load("edit")
+	
+	/**
+	 * An icon for starting a slideshow
+	 */
+	lazy val slideShow = load("slideshow")
 	/**
 	 * A start icon
 	 */

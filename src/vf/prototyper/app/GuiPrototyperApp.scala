@@ -3,7 +3,7 @@ package vf.prototyper.app
 import utopia.paradigm.generic.ParadigmDataType
 import utopia.reflection.container.stack.StackHierarchyManager
 import vf.prototyper.util.Common._
-import vf.prototyper.view.vc.StartProjectVc
+import vf.prototyper.view.vc.StartProjectEditVc
 
 /**
  * @author Mikko Hilpinen
@@ -14,5 +14,5 @@ object GuiPrototyperApp extends App
 	ParadigmDataType.setup()
 	
 	StackHierarchyManager.startRevalidationLoop()
-	new StartProjectVc().display().foreach { _ => System.exit(0) }
+	new StartProjectEditVc().display().foreach { _ => System.exit(0) }
 }
