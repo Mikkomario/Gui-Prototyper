@@ -1,21 +1,34 @@
 package vf.prototyper.view.component
 
 import utopia.flow.async.AsyncExtensions._
+import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.collection.immutable.caching.cache.Cache
-import utopia.flow.view.mutable.caching.ResettableLazy
+import utopia.flow.view.mutable.eventful.PointerWithEvents
 import utopia.flow.view.template.eventful.Changing
-import utopia.genesis.event.{ConsumeEvent, MouseButton, MouseButtonStateEvent}
-import utopia.genesis.handling.MouseButtonStateListener
-import utopia.genesis.image.MutableImage
-import utopia.genesis.util.Screen
+import utopia.flow.time.TimeExtensions._
+import utopia.genesis.event.{ConsumeEvent, MouseButton, MouseButtonStateEvent, MouseDragEvent, MouseEvent}
+import utopia.genesis.graphics.{DrawSettings, StrokeSettings}
+import utopia.genesis.handling.{MouseButtonStateListener, MouseDragListener}
+import utopia.genesis.image.Image
+import utopia.genesis.util.{Drawer, Screen}
+import utopia.genesis.view.{DragTracker, GlobalMouseEventHandler}
 import utopia.inception.handling.HandlerType
-import utopia.paradigm.shape.shape2d.Vector2D
+import utopia.paradigm.path.BezierPath
+import utopia.paradigm.shape.shape2d.{Bounds, Line, Point, Size, Vector2D}
+import utopia.paradigm.measurement.DistanceExtensions._
 import utopia.reach.component.factory.ComponentFactoryFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.image.ViewImageLabel
 import utopia.reach.component.template.ReachComponentWrapper
+import utopia.reach.util.Priority.High
+import utopia.reflection.component.drawing.template.DrawLevel.Foreground
+import utopia.reflection.component.drawing.template.{CustomDrawer, DrawLevel}
+import utopia.reflection.component.drawing.view.ImageViewDrawer
 import vf.prototyper.model.immutable.View
 import vf.prototyper.util.Common._
+
+import scala.collection.immutable.NumericRange
+import scala.concurrent.Future
 
 object ViewCanvas extends ComponentFactoryFactory[ViewCanvasFactory]
 {
@@ -58,20 +71,32 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		}
 	}
 	
-	private val lazyDrawImage = ResettableLazy { MutableImage.canvas(imagePointer.value.size) }
-	
-	// TODO: Add custom draw support
-	override val wrapped = ViewImageLabel(hierarchy).apply(imagePointer)
+	override val wrapped = ViewImageLabel(hierarchy)
+		.apply(imagePointer, customDrawers = Vector(BezierHandler))
 	
 	
 	// INITIAL CODE ----------------------------
 	
 	addMouseButtonListener(CanvasMouseListener)
 	
+	currentViewPointer.addContinuousAnyChangeListener { BezierHandler.reset() }
+	/*
+	parentHierarchy.linkPointer.addListenerAndSimulateEvent(false) { isLinked =>
+		if (isLinked.newValue)
+			GlobalMouseEventHandler += BezierHandler
+		else
+			GlobalMouseEventHandler -= BezierHandler
+	}*/
+	
+	private val tracker = new DragTracker(BezierHandler)
+	addMouseMoveListener(tracker)
+	addMouseButtonListener(tracker)
+	
 	// Pre-loads all view images
+	/*
 	imageLoadPointer.futureWhere { _.isNotProcessing }.foreach { _ =>
 		possibleViews.iterator.foreach { viewImageCache(_).waitFor() }
-	}
+	}*/
 	
 	
 	// COMPUTED --------------------------------
@@ -99,5 +124,93 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		}
 		
 		override def allowsHandlingFrom(handlerType: HandlerType): Boolean = true
+	}
+	
+	private object BezierHandler extends MouseDragListener with CustomDrawer
+	{
+		// ATTRIBUTES   ------------------------
+		
+		implicit val ds: DrawSettings = StrokeSettings.rounded(color.primary, 5)
+		
+		private val minDistance = 1.0.cm.toPixels
+		private val step = 0.2
+		
+		override val mouseDragFilter = MouseDragEvent.leftButtonFilter && MouseEvent.isOverAreaFilter(boundsInsideTop)
+		
+		private var currentDistance = 0.0
+		
+		private val pointsPointer = new PointerWithEvents(Vector[Point]())
+		
+		private val imagePointer = pointsPointer.mapAsyncCatching(Image.empty, skipInitialMap = true) { points =>
+			Future {
+				if (points.size < 3)
+					Image.empty
+				else {
+					// println(s"Creating a path from ${points.size} points")
+					val path = BezierPath(points, 0)
+					val actualStep = step / points.size
+					val pathPoints = Iterator.iterate(0.0) { _ + actualStep }.takeWhile { _ <= 1.0 }.map(path.apply).toVector
+					val pathBounds = Bounds.between(Point.topLeft(pathPoints), Point.bottomRight(pathPoints))
+					// println(s"Path bounds: $pathBounds")
+					val res = Image.paint2(pathBounds.size) { drawer =>
+						pathPoints.map { _ - pathBounds.position }.paired.foreach { p => drawer.draw(Line(p)) }
+					}.withOrigin(-pathBounds.position)
+					// println("Image created")
+					res
+				}
+			}
+		}.map { _.current }
+		
+		
+		// INITIAL CODE ------------------------
+		
+		imagePointer.addContinuousListener { e =>
+			val area = Bounds.around(e.values.filterNot { _.isEmpty }.map { _.bounds }).enlarged(Size.square(5))
+			// println(s"Repainting $area")
+			repaintArea(area, High)
+			// repaint()
+		}
+		
+		
+		// IMPLEMENTED  ------------------------
+		
+		override def opaque: Boolean = false
+		
+		override def drawLevel: DrawLevel = Foreground
+		
+		override def draw(drawer: Drawer, bounds: Bounds): Unit =
+			imagePointer.value.drawWith(drawer, bounds.position)
+		
+		override def onMouseDrag(event: MouseDragEvent): Unit = {
+			val movement = event.lastMove.transition.length
+			if (event.isDragStart) {
+				// println("Drag starts")
+				currentDistance = movement
+				val p = event.dragOrigin - positionInTop
+				// println(p)
+				// println(s"First point is ${p.relative} (${ p.absolute } / ${ p.anchor })")
+				pointsPointer.value = Vector(p)
+			}
+			else {
+				currentDistance += movement
+				if (currentDistance >= minDistance || event.isDragEnd) {
+					// println("New breakpoint")
+					currentDistance -= minDistance
+					val p = event.position - positionInTop
+					// println(s"Latest position is $p")
+					pointsPointer.value :+= p
+				}
+			}
+		}
+		
+		override def allowsHandlingFrom(handlerType: HandlerType): Boolean = true
+		
+		
+		// OTHER    ---------------------------
+		
+		def reset() = {
+			currentDistance = 0.0
+			pointsPointer.clear()
+		}
 	}
 }
