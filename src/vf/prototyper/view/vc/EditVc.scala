@@ -134,7 +134,7 @@ class EditVc(original: Vector[View])
 						}
 					}
 				// 3: Canvas
-				val canvas = new CanvasVc(currentViewPointer, factories.next().parentHierarchy)
+				val canvas = new EditCanvasVc(currentViewPointer, factories.next().parentHierarchy)
 				canvas.addListener(EditCanvasListener)
 				
 				// The link area is shown only when a link is selected
@@ -197,7 +197,14 @@ class EditVc(original: Vector[View])
 	 * @return Future that resolves into edit results (views)
 	 */
 	def display() =
-		lazyWindow.resettingValueIterator.find { !_.isClosed }.get.closeFuture.map { _ => views.map { _.result } }
+		lazyWindow.resettingValueIterator.find { !_.isClosed }.get.closeFuture.map { _ =>
+			val firstViewIndex = views.indexOf(firstView)
+			val resultViews = views.map { _.result }
+			if (firstViewIndex >= 0)
+				resultViews(firstViewIndex) +: resultViews.withoutIndex(firstViewIndex)
+			else
+				resultViews
+		}
 	
 	private def builderForId(viewId: Int) = views.find { _.id == viewId }
 	

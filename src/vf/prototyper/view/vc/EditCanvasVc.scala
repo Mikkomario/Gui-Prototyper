@@ -24,7 +24,7 @@ import vf.prototyper.util.Common.Colors._
  * @author Mikko Hilpinen
  * @since 15.2.2023, v0.1
  */
-class CanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHierarchy)
+class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHierarchy)
 {
 	// ATTRIBUTES   ---------------------------
 	

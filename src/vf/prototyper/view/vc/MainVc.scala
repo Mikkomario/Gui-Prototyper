@@ -94,7 +94,7 @@ class MainVc(initialProjects: Vector[Project])
 		frame.startEventGenerators(actorHandler)
 		frame.visible = true
 		frame.closeFuture.flatMap { _ =>
-			openProjectIdsPointer.findMapFuture { p => if (p.nonEmpty) Some(()) else None }
+			openProjectIdsPointer.findMapFuture { p => if (p.isEmpty) Some(()) else None }
 		}
 	}
 	
@@ -102,17 +102,15 @@ class MainVc(initialProjects: Vector[Project])
 		projectsPointer.update { p => (p :+ project).sortBy { _.name } }
 	} }
 	
-	// TODO: Implement
-	private def viewProject(project: Project) = println("View")
+	private def viewProject(project: Project) = {
+		if (tryOpen(project))
+			new PresentationVc(project).display().foreach { _ =>
+				openProjectIdsPointer.update { _ - project.id }
+			}
+	}
 	private def editProject(project: Project) = {
 		// Only allows a single edit view per project at a time
-		val shouldOpen = openProjectIdsPointer.pop { ids =>
-			if (ids.contains(project.id))
-				false -> ids
-			else
-				true -> (ids + project.id)
-		}
-		if (shouldOpen)
+		if (tryOpen(project))
 			new StartProjectEditVc(Some(project)).display().foreach { result =>
 				result.foreach { newVersion =>
 					projectsPointer
@@ -124,5 +122,13 @@ class MainVc(initialProjects: Vector[Project])
 	private def deleteProject(project: Project) = {
 		if (!openProjectIdsPointer.value.contains(project.id))
 			projectsPointer.update { _.filterNot { _.id == project.id } }
+	}
+	
+	// Returns true if can open
+	private def tryOpen(project: Project) = openProjectIdsPointer.pop { ids =>
+		if (ids.contains(project.id))
+			false -> ids
+		else
+			true -> (ids + project.id)
 	}
 }

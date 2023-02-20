@@ -1,17 +1,22 @@
 package vf.prototyper.model.immutable
 
 import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.collection.immutable.range.NumericSpan
+import utopia.flow.collection.mutable.MutableMatrix
 import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
 import utopia.flow.generic.model.template.{ModelConvertible, ModelLike, Property}
 import utopia.flow.generic.casting.ValueConversions._
 import utopia.flow.generic.factory.FromModelFactory
 import utopia.flow.generic.model.mutable.DataType.{IntType, StringType}
-import utopia.genesis.image.Image
-import utopia.paradigm.shape.shape2d.Bounds
+import utopia.flow.view.mutable.Pointer
+import utopia.genesis.image.{Image, Pixels}
+import utopia.paradigm.color.Color
+import utopia.paradigm.shape.shape2d.{Bounds, Size}
 import utopia.paradigm.generic.ParadigmValue._
 import vf.prototyper.util.Common._
 
 import java.nio.file.{Path, Paths}
+import scala.concurrent.Future
 import scala.util.Try
 
 object View extends FromModelFactory[View]
@@ -64,4 +69,49 @@ case class View(id: Int, name: String, path: Path, region: Option[Bounds] = None
 	override def toModel: Model =
 		Model.from("id" -> id, "name" -> name, "path" -> path.toString, "region" -> region,
 			"links" -> links)
+	
+	
+	// OTHER    ------------------------------
+	
+	/**
+	 * @param view A view
+	 * @return Whether this view is a parent view of the specified view
+	 */
+	def isParentOf(view: View) =
+		path == view.path && view.region.exists { subRegion =>
+			region.forall { _.contains(subRegion) }
+		}
+	
+	/**
+	 * Converts this view into an image where links have been updated
+	 * @param maxSize Maximum resolution of the resulting image
+	 * @return Future that resolves into the view image when completed
+	 */
+	def viewImage(maxSize: Size) = Future {
+		val base = image.fittingWithin(maxSize).withMinimumResolution
+		if (links.nonEmpty) {
+			println("Starting image conversion")
+			// Converts link area hues
+			val linkColor = color.secondary.dark.background
+			val linkLuminosity = linkColor.luminosity
+			
+			def replaceColor(color: Color) = if (color.luminosity <= linkLuminosity) linkColor else color
+			
+			base.mapPixels { pixels =>
+				links.only match {
+					case Some(link) => pixels.mapArea(link.area * base.sourceResolution)(replaceColor)
+					case None =>
+						val mutablePixels = MutableMatrix(pixels.map { Pointer(_) })
+						links.foreach { link =>
+							mutablePixels.view((link.area * base.sourceResolution)
+								.xyPair.map { s => NumericSpan(s.start.toInt, s.end.toInt) }).pointers
+								.iterator.foreach { _.update(replaceColor) }
+						}
+						Pixels(mutablePixels.currentState)
+				}
+			}
+		}
+		else
+			base
+	}
 }
