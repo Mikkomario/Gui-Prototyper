@@ -26,7 +26,7 @@ object Icon
 	 */
 	val empty = new Icon(SingleColorIcon.empty)
 	
-	private val iconsDir: Path = "data/icons"
+	private val iconsDir: Path = directory.data/"icons"
 	
 	private val mediumSize = Size.square(1.cm.toPixels.toInt)
 	private val largeSize = mediumSize * 1.25
@@ -48,7 +48,15 @@ object Icon
 	 * An up-facing arrow icon
 	 */
 	lazy val arrowUp = arrowDown.map { _.flippedVertically }
+	/**
+	 * A start icon
+	 */
+	lazy val start = load("start")
 	
+	/**
+	 * A cancel icon
+	 */
+	lazy val cancel = load("cancel")
 	/**
 	 * Close top panel -icon
 	 */
@@ -58,6 +66,15 @@ object Icon
 	 * A delete icon (thrash can)
 	 */
 	lazy val delete = load("delete")
+	
+	/**
+	 * A file icon with a check-mark
+	 */
+	lazy val fileSuccess = load("file-success")
+	/**
+	 * A scan document -icon
+	 */
+	lazy val scanDocument = load("scan-document")
 	
 	/**
 	 * An empty / non-filled 1-icon

@@ -1,9 +1,9 @@
-package vf.prototyper.view
+package vf.prototyper.view.vc
 
 import utopia.flow.collection.immutable.Pair
 import utopia.flow.view.mutable.eventful.PointerWithEvents
 import utopia.flow.view.template.eventful.Changing
-import utopia.genesis.event.{ConsumeEvent, MouseButton, MouseButtonStateEvent, MouseEvent, MouseMoveEvent}
+import utopia.genesis.event._
 import utopia.genesis.handling.{MouseButtonStateListener, MouseMoveHandlerType, MouseMoveListener}
 import utopia.genesis.util.{Drawer, Screen}
 import utopia.inception.handling.HandlerType

@@ -42,7 +42,10 @@ object Common
 	 * Pixels per inch of the local screen
 	 */
 	implicit val ppi: Ppi = Screen.ppi
-	private val actorHandler = ActorHandler()
+	/**
+	 * The root actor handler used
+	 */
+	val actorHandler = ActorHandler()
 	/**
 	 * Settings for scrolling
 	 */
@@ -64,15 +67,11 @@ object Common
 	val margins = Margins((0.25.cm.toPixels / 2.0).toInt * 2)
 	
 	/**
-	 * Directory that stores the data used in this application
-	 */
-	val dataDirectory = Paths.get("data")
-	/**
 	 * The cursors used
 	 */
 	val cursors = {
 		// Loads the cursors from icon files. Logs failures.
-		val cursorDirectory = dataDirectory/"cursors"
+		val cursorDirectory = directory.data/"cursors"
 		import CursorType._
 		CursorSet.loadIcons(
 			Map[CursorType, (String, Point)](
@@ -100,6 +99,10 @@ object Common
 	// COMPUTED ----------------------------
 	
 	/**
+	 * @return Access point to different directories
+	 */
+	def directory = Directories
+	/**
 	 * @return Access point to color values
 	 */
 	def color = Colors
@@ -114,6 +117,22 @@ object Common
 	
 	
 	// NESTED   ----------------------------
+	
+	object Directories
+	{
+		/**
+		 * Directory that stores all project data
+		 */
+		val data = Paths.get("data")
+		/**
+		 * Directory that stores the view documents
+		 */
+		val views = data/"views"
+		/**
+		 * Directory that stores project files
+		 */
+		val projects = data/"projects"
+	}
 	
 	object Colors
 	{

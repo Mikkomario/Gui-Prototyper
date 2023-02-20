@@ -1,4 +1,4 @@
-package vf.prototyper.view
+package vf.prototyper.view.vc
 
 /**
  * The main view-controller

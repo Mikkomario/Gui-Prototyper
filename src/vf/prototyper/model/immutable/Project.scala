@@ -2,11 +2,11 @@ package vf.prototyper.model.immutable
 
 import utopia.bunnymunch.jawn.JsonBunny
 import utopia.flow.collection.CollectionExtensions._
-import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
-import utopia.flow.generic.model.template.{ModelConvertible, ModelLike, Property}
 import utopia.flow.generic.casting.ValueConversions._
 import utopia.flow.generic.factory.FromModelFactory
+import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
 import utopia.flow.generic.model.mutable.DataType.StringType
+import utopia.flow.generic.model.template.{ModelConvertible, ModelLike, Property}
 import utopia.flow.parse.file.FileExtensions._
 import vf.prototyper.util.Common._
 
@@ -15,8 +15,6 @@ import scala.util.Try
 object Project extends FromModelFactory[Project]
 {
 	// ATTRIBUTES   ------------------------
-	
-	private lazy val projectsDirectory = dataDirectory/"projects"
 	
 	private lazy val schema = ModelDeclaration("name" -> StringType)
 	
@@ -36,7 +34,7 @@ object Project extends FromModelFactory[Project]
 	 * Loads all saved projects
 	 * @return Success or failure. On success, returns failed project loads and successful loads.
 	 */
-	def loadAll() = projectsDirectory
+	def loadAll() = directory.projects
 		.tryIterateChildren { _.map { p => JsonBunny.munchPath(p).flatMap { v => apply(v.getModel) } }.toTryCatch }
 }
 

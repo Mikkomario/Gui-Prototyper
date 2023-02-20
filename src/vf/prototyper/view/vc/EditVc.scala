@@ -1,4 +1,4 @@
-package vf.prototyper.view
+package vf.prototyper.view.vc
 
 import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.collection.immutable.Pair
@@ -30,6 +30,7 @@ import vf.prototyper.model.immutable.View
 import vf.prototyper.model.mutable.{LinkBuilder, ViewBuilder}
 import vf.prototyper.util.Common.Colors._
 import vf.prototyper.util.Common._
+import vf.prototyper.view.Icon
 
 /**
  * Controls the main editing view
@@ -97,7 +98,7 @@ class EditVc(original: Vector[View])
 										val viewToRemove = currentView
 										val index = views.indexOf(viewToRemove)
 										if (index == 0)
-											currentView = views.last
+											currentView = views(1)
 										else
 											currentView = views(index - 1)
 										views = views.withoutIndex(index)
@@ -219,7 +220,7 @@ class EditVc(original: Vector[View])
 			// Either creates a new sub-view or a link
 			if (event.mouseButton == MouseButton.Left) {
 				val newView = currentView.subView(idGen.next(), event.area)
-				views :+= newView
+				views = views.inserted(newView, views.indexOf(currentView) + 1)
 				currentView = newView
 			}
 			else

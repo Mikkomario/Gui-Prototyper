@@ -1,3 +1,5 @@
 out/
 .idea/workspace.xml
 .idea/shelf
+data/views
+data/projects
