@@ -1,5 +1,8 @@
 package vf.prototyper.view.vc
 
+import utopia.firmament.component.Window
+import utopia.firmament.model.HotKey
+import utopia.firmament.model.stack.LengthExtensions._
 import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.parse.file.FileConflictResolution.Rename
 import utopia.flow.parse.file.FileExtensions._
@@ -8,19 +11,14 @@ import utopia.flow.util.StringExtensions._
 import utopia.flow.view.immutable.eventful.Fixed
 import utopia.flow.view.mutable.Pointer
 import utopia.flow.view.mutable.eventful.PointerWithEvents
-import utopia.paradigm.enumeration.Alignment.Top
+import utopia.paradigm.color.ColorRole.{Primary, Secondary}
 import utopia.paradigm.shape.shape2d.Insets
 import utopia.reach.component.button.image.ImageAndTextButton
 import utopia.reach.component.factory.Mixed
 import utopia.reach.component.input.text.TextField
-import utopia.reach.container.ReachCanvas
-import utopia.reach.container.multi.stack.Stack
+import utopia.reach.container.multi.Stack
 import utopia.reach.container.wrapper.Framing
-import utopia.reflection.component.drawing.immutable.BackgroundDrawer
-import utopia.reflection.container.swing.window.WindowResizePolicy.Program
-import utopia.reflection.container.swing.window.{Frame, Window}
-import utopia.reflection.event.HotKey
-import utopia.reflection.shape.LengthExtensions._
+import utopia.reach.window.ReachWindow
 import vf.prototyper.model.immutable.{Project, View}
 import vf.prototyper.util.Common._
 import vf.prototyper.view.Icon
@@ -56,51 +54,9 @@ class StartProjectEditVc(project: Option[Project] = None)
 		case None => "New Project"
 	})
 	private val viewFilesPointer = new PointerWithEvents(initialPaths.toVector)
-	private val windowPointer = Pointer.empty[Window[_]]()
+	private val windowPointer = Pointer.empty[Window]()
 	
 	private var startFuture: Option[Future[Project]] = None
-	
-	private val view = ReachCanvas(cursors) { hierarchy =>
-		val bg = color.primary.default
-		// Contains a framed stack with 3 rows:
-		// 1: Project name field
-		// 2: File input area
-		// 3: Start & Cancel -buttons
-		Framing(hierarchy).build(Stack).apply(margins.medium.any, Vector(BackgroundDrawer(bg))) { stackF =>
-			stackF.withContext(context.base.inContextWithBackground(bg)).build(Mixed).apply() { factories =>
-				val projectNameField = factories.mapContext { _.forTextComponents }(TextField)
-					.forString(length.field.medium.upscaling, Fixed("Project Name"), textPointer = projectNamePointer)
-				val dropArea = factories(FileDropArea)
-					.apply(viewFilesPointer) { p =>
-						if (acceptedFileTypes.contains(p.fileType))
-							Right(p)
-						else
-							Left("Only image files are supported")
-					}
-				val buttons = factories(Stack)
-					.mapContext { _.forTextComponents.mapInsets { i => (i * 2).expandingHorizontally } }
-					.build(Mixed)
-					.row() { factories =>
-						val imageInsets = Insets.symmetric(margins.small).any
-						val startButton = factories.mapContext { _.forSecondaryColorButtons }(ImageAndTextButton)
-							.withIcon(Icon.start.medium, "Start", imageInsets,
-								hotKeys = Set(HotKey.keyWithIndex(KeyEvent.VK_ENTER))) {
-								// Moves to the edit view (at least one view is required, however)
-								if (viewFilesPointer.value.nonEmpty) {
-									start()
-								}
-							}
-						val cancelButton = factories.mapContext { _.forPrimaryColorButtons }(ImageAndTextButton)
-							.withIcon(Icon.cancel.medium, "Cancel", imageInsets,
-								hotKeys = Set(HotKey.keyWithIndex(KeyEvent.VK_ESCAPE))) {
-								windowPointer.value.foreach { _.close() } }
-						Vector(startButton, cancelButton)
-					}
-				
-				Vector(projectNameField, dropArea, buttons.parent)
-			}
-		}
-	}
 	
 	
 	// OTHER    -----------------------------
@@ -110,12 +66,53 @@ class StartProjectEditVc(project: Option[Project] = None)
 	 * @return Future that resolves into the created project, or None if project creation was cancelled
 	 */
 	def display() =
-		windowPointer.filterNotCurrent { _.isClosed }
+		windowPointer.filterNotCurrent { _.hasClosed }
 			.getOrElseUpdate {
-				val window = Frame.windowed(view.parent, "Start project", Program, margins.medium,
-					getAnchor = view.parent.anchorPosition(_, Top))
-				window.startEventGenerators(actorHandler)
-				window.visible = true
+				// This view contains a framed stack with 3 rows:
+				// 1: Project name field
+				// 2: File input area
+				// 3: Start & Cancel -buttons
+				val window = ReachWindow.withContext(context.window).withWindowBackground(color.primary)
+					.using(Framing, title = "Start project") { (_, framingF) =>
+						framingF.build(Stack).apply(margins.medium.any) { stackF =>
+							stackF.build(Mixed).apply() { factories =>
+								val projectNameField = factories(TextField)
+									.forString(length.field.medium.upscaling, Fixed("Project Name"),
+										textPointer = projectNamePointer)
+								val dropArea = factories(FileDropArea)
+									.apply(viewFilesPointer) { p =>
+										if (acceptedFileTypes.contains(p.fileType))
+											Right(p)
+										else
+											Left("Only image files are supported")
+									}
+								val buttons = factories(Stack)
+									.mapContext { _.forTextComponents.mapTextInsets { i => (i * 2).expandingHorizontally } }
+									.build(Mixed)
+									.row() { factories =>
+										val imageInsets = Insets.symmetric(margins.small).any
+										val startButton = factories.mapContext { _/Secondary }(ImageAndTextButton)
+											.withIcon(Icon.start.medium, "Start", imageInsets,
+												hotKeys = Set(HotKey.keyWithIndex(KeyEvent.VK_ENTER))) {
+												// Moves to the edit view (at least one view is required, however)
+												if (viewFilesPointer.value.nonEmpty) {
+													start()
+												}
+											}
+										val cancelButton = factories.mapContext { _/Primary }(ImageAndTextButton)
+											.withIcon(Icon.cancel.medium, "Cancel", imageInsets,
+												hotKeys = Set(HotKey.keyWithIndex(KeyEvent.VK_ESCAPE))) {
+												windowPointer.value.foreach { _.close() }
+											}
+										Vector(startButton, cancelButton)
+									}
+								
+								Vector(projectNameField, dropArea, buttons.parent)
+							}
+						}
+					}
+				
+				window.display(centerOnParent = true)
 				window
 			}
 			.closeFuture.flatMap { _ =>

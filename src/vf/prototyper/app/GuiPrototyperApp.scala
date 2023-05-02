@@ -1,7 +1,6 @@
 package vf.prototyper.app
 
 import utopia.paradigm.generic.ParadigmDataType
-import utopia.reflection.container.stack.StackHierarchyManager
 import vf.prototyper.model.immutable.Project
 import vf.prototyper.util.Common._
 import vf.prototyper.view.vc.{MainVc, StartProjectEditVc}
@@ -24,8 +23,6 @@ object GuiPrototyperApp extends App
 			log(error, "Project-loading failed")
 			Vector()
 	}
-	
-	StackHierarchyManager.startRevalidationLoop()
 	
 	// Case: No projects to start with => Goes directly to new project view
 	if (initialProjects.isEmpty)

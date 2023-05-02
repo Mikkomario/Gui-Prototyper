@@ -1,34 +1,28 @@
 package vf.prototyper.view.component
 
-import utopia.flow.async.AsyncExtensions._
+import utopia.firmament.drawing.template.DrawLevel.Foreground
+import utopia.firmament.drawing.template.{CustomDrawer, DrawLevel}
 import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.collection.immutable.caching.cache.Cache
 import utopia.flow.view.mutable.eventful.PointerWithEvents
 import utopia.flow.view.template.eventful.Changing
-import utopia.flow.time.TimeExtensions._
-import utopia.genesis.event.{ConsumeEvent, MouseButton, MouseButtonStateEvent, MouseDragEvent, MouseEvent}
-import utopia.genesis.graphics.{DrawSettings, StrokeSettings}
+import utopia.genesis.event._
+import utopia.genesis.graphics.{DrawSettings, Drawer, StrokeSettings}
 import utopia.genesis.handling.{MouseButtonStateListener, MouseDragListener}
 import utopia.genesis.image.Image
-import utopia.genesis.util.{Drawer, Screen}
-import utopia.genesis.view.{DragTracker, GlobalMouseEventHandler}
+import utopia.genesis.util.Screen
+import utopia.genesis.view.DragTracker
 import utopia.inception.handling.HandlerType
-import utopia.paradigm.path.BezierPath
-import utopia.paradigm.shape.shape2d.{Bounds, Line, Point, Size, Vector2D}
 import utopia.paradigm.measurement.DistanceExtensions._
+import utopia.paradigm.path.BezierPath
+import utopia.paradigm.shape.shape2d._
 import utopia.reach.component.factory.ComponentFactoryFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.image.ViewImageLabel
 import utopia.reach.component.template.ReachComponentWrapper
 import utopia.reach.util.Priority.High
-import utopia.reflection.component.drawing.template.DrawLevel.Foreground
-import utopia.reflection.component.drawing.template.{CustomDrawer, DrawLevel}
-import utopia.reflection.component.drawing.view.ImageViewDrawer
 import vf.prototyper.model.immutable.View
 import vf.prototyper.util.Common._
-
-import scala.collection.immutable.NumericRange
-import scala.concurrent.Future
 
 object ViewCanvas extends ComponentFactoryFactory[ViewCanvasFactory]
 {
@@ -63,7 +57,7 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 	private val viewImageCache = Cache { view: View => view.viewImage(maxImageSize) }
 	// Shows a non-modified image while loading image modifications
 	private val imageLoadPointer = currentViewPointer
-		.mapAsyncCatching(currentView.image.fittingWithin(maxImageSize)) { viewImageCache(_) }
+		.mapAsync(currentView.image.fittingWithin(maxImageSize)) { viewImageCache(_) }
 	private val imagePointer = imageLoadPointer.map { res =>
 		res.queuedOrigin.orElse(res.activeOrigin) match {
 			case Some(origin) => origin.image.fittingWithin(maxImageSize)
@@ -141,23 +135,21 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		
 		private val pointsPointer = new PointerWithEvents(Vector[Point]())
 		
-		private val imagePointer = pointsPointer.mapAsyncCatching(Image.empty, skipInitialMap = true) { points =>
-			Future {
-				if (points.size < 3)
-					Image.empty
-				else {
-					// println(s"Creating a path from ${points.size} points")
-					val path = BezierPath(points, 0)
-					val actualStep = step / points.size
-					val pathPoints = Iterator.iterate(0.0) { _ + actualStep }.takeWhile { _ <= 1.0 }.map(path.apply).toVector
-					val pathBounds = Bounds.between(Point.topLeft(pathPoints), Point.bottomRight(pathPoints))
-					// println(s"Path bounds: $pathBounds")
-					val res = Image.paint2(pathBounds.size) { drawer =>
-						pathPoints.map { _ - pathBounds.position }.paired.foreach { p => drawer.draw(Line(p)) }
-					}.withOrigin(-pathBounds.position)
-					// println("Image created")
-					res
-				}
+		private val imagePointer = pointsPointer.mapAsync(Image.empty, skipInitialMap = true) { points =>
+			if (points.size < 3)
+				Image.empty
+			else {
+				// println(s"Creating a path from ${points.size} points")
+				val path = BezierPath(points, 0)
+				val actualStep = step / points.size
+				val pathPoints = Iterator.iterate(0.0) { _ + actualStep }.takeWhile { _ <= 1.0 }.map(path.apply).toVector
+				val pathBounds = Bounds.between(Point.topLeft(pathPoints), Point.bottomRight(pathPoints))
+				// println(s"Path bounds: $pathBounds")
+				val res = Image.paint(pathBounds.size) { drawer =>
+					pathPoints.map { _ - pathBounds.position }.paired.foreach { p => drawer.draw(Line(p)) }
+				}.withOrigin(-pathBounds.position)
+				// println("Image created")
+				res
 			}
 		}.map { _.current }
 		

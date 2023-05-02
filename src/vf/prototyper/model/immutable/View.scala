@@ -3,20 +3,19 @@ package vf.prototyper.model.immutable
 import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.collection.immutable.range.NumericSpan
 import utopia.flow.collection.mutable.MutableMatrix
-import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
-import utopia.flow.generic.model.template.{ModelConvertible, ModelLike, Property}
 import utopia.flow.generic.casting.ValueConversions._
 import utopia.flow.generic.factory.FromModelFactory
+import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
 import utopia.flow.generic.model.mutable.DataType.{IntType, StringType}
+import utopia.flow.generic.model.template.{ModelConvertible, ModelLike, Property}
 import utopia.flow.view.mutable.Pointer
 import utopia.genesis.image.{Image, Pixels}
 import utopia.paradigm.color.Color
-import utopia.paradigm.shape.shape2d.{Bounds, Size}
 import utopia.paradigm.generic.ParadigmValue._
+import utopia.paradigm.shape.shape2d.{Bounds, Size}
 import vf.prototyper.util.Common._
 
 import java.nio.file.{Path, Paths}
-import scala.concurrent.Future
 import scala.util.Try
 
 object View extends FromModelFactory[View]
@@ -83,16 +82,17 @@ case class View(id: Int, name: String, path: Path, region: Option[Bounds] = None
 		}
 	
 	/**
-	 * Converts this view into an image where links have been updated
+	 * Converts this view into an image where links have been updated.
+	 * Please note that this function may take while to complete, and should therefore be performed asynchronously.
 	 * @param maxSize Maximum resolution of the resulting image
-	 * @return Future that resolves into the view image when completed
+	 * @return Image of this view
 	 */
-	def viewImage(maxSize: Size) = Future {
+	def viewImage(maxSize: Size) = {
 		val base = image.fittingWithin(maxSize).withMinimumResolution
 		if (links.nonEmpty) {
 			println("Starting image conversion")
 			// Converts link area hues
-			val linkColor = color.secondary.dark.background
+			val linkColor = color.secondary.dark
 			val linkLuminosity = linkColor.luminosity
 			
 			def replaceColor(color: Color) = if (color.luminosity <= linkLuminosity) linkColor else color

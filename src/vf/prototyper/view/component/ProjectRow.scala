@@ -1,42 +1,38 @@
 package vf.prototyper.view.component
 
+import utopia.firmament.component.display.RefreshableWithPointer
+import utopia.firmament.context.TextContext
+import utopia.firmament.model.enumeration.StackLayout.Center
+import utopia.firmament.model.stack.LengthExtensions._
 import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.paradigm.color.ColorRole
+import utopia.paradigm.color.ColorRole.Secondary
 import utopia.reach.component.button.image.ImageButton
-import utopia.reach.component.factory.{ContextInsertableComponentFactory, ContextInsertableComponentFactoryFactory, ContextualComponentFactory, Mixed}
+import utopia.reach.component.factory.FromContextComponentFactoryFactory.Ccff
+import utopia.reach.component.factory.{Mixed, TextContextualFactory}
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.text.ViewTextLabel
 import utopia.reach.component.template.ReachComponentWrapper
-import utopia.reach.container.multi.stack.Stack
-import utopia.reflection.color.ColorRole
-import utopia.reflection.color.ColorRole.Secondary
-import utopia.reflection.component.context.TextContext
-import utopia.reflection.component.template.display.RefreshableWithPointer
-import utopia.reflection.container.stack.StackLayout.Center
-import utopia.reflection.shape.LengthExtensions._
+import utopia.reach.container.multi.Stack
 import vf.prototyper.model.immutable.Project
 import vf.prototyper.util.Common._
 import vf.prototyper.view.Icon
 
-object ProjectRow
-	extends ContextInsertableComponentFactoryFactory[TextContext, ProjectRowFactory, ContextualProjectRowFactory]
+object ProjectRow extends Ccff[TextContext, ContextualProjectRowFactory]
 {
-	override def apply(hierarchy: ComponentHierarchy): ProjectRowFactory = new ProjectRowFactory(hierarchy)
+	override def withContext(hierarchy: ComponentHierarchy, context: TextContext): ContextualProjectRowFactory =
+		new ContextualProjectRowFactory(hierarchy, context)
 }
 
-class ProjectRowFactory(hierarcy: ComponentHierarchy)
-	extends ContextInsertableComponentFactory[TextContext, ContextualProjectRowFactory]
-{
-	override def withContext[N <: TextContext](context: N): ContextualProjectRowFactory[N] =
-		new ContextualProjectRowFactory[N](hierarcy, context)
-}
-
-class ContextualProjectRowFactory[N <: TextContext](hierarchy: ComponentHierarchy, override val context: N)
-	extends ContextualComponentFactory[N, TextContext, ContextualProjectRowFactory]
+class ContextualProjectRowFactory(hierarchy: ComponentHierarchy, override val context: TextContext)
+	extends TextContextualFactory[ContextualProjectRowFactory]
 {
 	// IMPLEMENTED  ---------------------
 	
-	override def withContext[N2 <: TextContext](newContext: N2): ContextualProjectRowFactory[N2] =
-		new ContextualProjectRowFactory[N2](hierarchy, newContext)
+	override def self: ContextualProjectRowFactory = this
+	
+	override def withContext(newContext: TextContext): ContextualProjectRowFactory =
+		new ContextualProjectRowFactory(hierarchy, newContext)
 		
 	
 	// OTHER    -------------------------
@@ -71,12 +67,12 @@ class ProjectRow(hierarchy: ComponentHierarchy, context: TextContext, initialPro
 	// Wraps a stack where the project name is displayed on the left and the buttons on the right
 	override protected val wrapped = Stack(hierarchy).withContext(context).build(Mixed)
 		.row(Center, cap = margins.medium.any, areRelated = true) { factories =>
-			val nameLabel = factories(ViewTextLabel).mapContext { _.expandingToRight }.apply(namePointer)
+			val nameLabel = factories(ViewTextLabel).mapContext { _.withTextExpandingToRight }.apply(namePointer)
 			val viewButton = factories(ImageButton)
 				.withColouredIcon(Icon.slideShow.medium, Secondary) { viewAction(content) }
 			val editButton = factories(ImageButton).withColouredIcon(Icon.edit.medium, Secondary) { editAction(content) }
 			val deleteButton = factories(ImageButton).withColouredIcon(Icon.delete.medium,
-				ColorRole.Error) { deleteAction(content) }
+				ColorRole.Failure) { deleteAction(content) }
 			
 			Vector(nameLabel, viewButton, editButton, deleteButton)
 		}

@@ -1,5 +1,10 @@
 package vf.prototyper.view.vc
 
+import utopia.firmament.drawing.immutable.BackgroundDrawer
+import utopia.firmament.localization.DisplayFunction
+import utopia.firmament.model.enumeration.StackLayout.Center
+import utopia.firmament.model.stack.LengthExtensions._
+import utopia.firmament.model.stack.{StackInsets, StackLength}
 import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.collection.immutable.Pair
 import utopia.flow.operator.End.{First, Last}
@@ -7,24 +12,17 @@ import utopia.flow.view.immutable.eventful.{AlwaysTrue, Fixed}
 import utopia.flow.view.mutable.caching.ResettableLazy
 import utopia.flow.view.mutable.eventful.PointerWithEvents
 import utopia.genesis.event.MouseButton
-import utopia.paradigm.enumeration.Alignment
+import utopia.paradigm.color.ColorRole
+import utopia.paradigm.color.ColorRole.Primary
+import utopia.paradigm.enumeration.Alignment.Top
 import utopia.reach.component.button.image.ImageButton
 import utopia.reach.component.factory.Mixed
 import utopia.reach.component.input.check.CheckBox
 import utopia.reach.component.input.selection.DropDown
 import utopia.reach.component.input.text.TextField
-import utopia.reach.container.ReachCanvas
-import utopia.reach.container.multi.stack.{Stack, ViewStack}
+import utopia.reach.container.multi.{Stack, ViewStack}
 import utopia.reach.container.wrapper.Framing
-import utopia.reflection.color.ColorRole
-import utopia.reflection.color.ColorRole.Primary
-import utopia.reflection.component.drawing.immutable.BackgroundDrawer
-import utopia.reflection.container.stack.StackLayout.Center
-import utopia.reflection.container.swing.window.Frame
-import utopia.reflection.container.swing.window.WindowResizePolicy.Program
-import utopia.reflection.localization.DisplayFunction
-import utopia.reflection.shape.LengthExtensions._
-import utopia.reflection.shape.stack.{StackInsets, StackLength}
+import utopia.reach.window.ReachWindow
 import vf.prototyper.model.event.{CanvasEvent, CanvasListener}
 import vf.prototyper.model.immutable.View
 import vf.prototyper.model.mutable.{LinkBuilder, ViewBuilder}
@@ -56,102 +54,101 @@ class EditVc(original: Vector[View])
 	
 	private val isLinkSelectedPointer = currentLinkPointer.map { _.isDefined }
 	
-	private val view = ReachCanvas(cursors) { hierarchy =>
-		// The view consists of 3 vertical elements where the 3rd is hidden at times:
-		// 1) Header
-		// 2) Canvas
-		// 3) Link View
-		ViewStack(hierarchy).withContext(context.base).build(Mixed)
-			.apply(marginPointer = Fixed(StackLength.fixedZero)) { factories =>
-				// 1: The header contains left & right -arrows, as well as an input field for the view name
-				// Also allows for setting the view as the first view, as well as view deletion
-				// [< | View Name | 1 | Delete | >]
-				val headerBg = primary.dark
-				val header = factories.next()(Framing).mapContext { _.inContextWithBackground(headerBg) }.build(Stack)
-					.apply(margins.small.any, customDrawers = Vector(BackgroundDrawer(headerBg))) { stackF =>
-						stackF.build(Mixed).row() { factories =>
-							// Left & Right arrows
-							val arrows = Pair(Icon.arrowLeft, Icon.arrowRight).mapWithSides { (icon, end) =>
-								factories(ImageButton).withColouredIcon(icon.large, Primary,
-									insets = StackInsets.any.mapVertical { _.withLowPriority }) {
-									val currentIndex = views.indexOf(currentView)
-									val nextIndex = end match {
-										case First => if (currentIndex == 0) views.size - 1 else currentIndex - 1
-										case Last => if (currentIndex == views.size - 1) 0 else currentIndex + 1
-									}
-									currentView = views(nextIndex)
-								}
-							}
-							// Name field
-							val nameField = factories.mapContext { _.forTextComponents }(TextField)
-								.forString(length.field.medium.upscaling, fieldNamePointer = Fixed("View Name"),
-									textPointer = viewNameInputPointer)
-							// Is first -flag
-							val isFirstFlag = factories(CheckBox.full(Icon.oneFilled.large, Icon.oneEmpty.large))
-								.apply(isFirstViewPointer, isFirstViewPointer.map { !_ })
-							// Delete button
-							// TODO: Add enabled state
-							val deleteButton = factories(ImageButton)
-								.withColouredIcon(Icon.delete.large, ColorRole.Error) {
-									if (views.hasSize > 1) {
-										// Deletes the view
-										val viewToRemove = currentView
-										val index = views.indexOf(viewToRemove)
-										if (index == 0)
-											currentView = views(1)
-										else
-											currentView = views(index - 1)
-										views = views.withoutIndex(index)
-										// Also deletes all links to that view
-										views.foreach { _.removeLinksTo(viewToRemove) }
-									}
-								}
-							
-							Vector(arrows.first, nameField, isFirstFlag, deleteButton, arrows.second)
-						}
-					}
-				// 2: Link view
-				// [ Target Dropdown | OK | Delete ]
-				val linkAreaBg = primary.default
-				val linkArea = factories.next()(Framing).mapContext { _.inContextWithBackground(linkAreaBg) }.build(Stack)
-					.apply(margins.medium.any.toInsets.expandingToRight,
-						customDrawers = Vector(BackgroundDrawer(linkAreaBg))) { stackF =>
-						stackF.build(Mixed).row(Center, areRelated = true) { factories =>
-							val cFactories = factories.mapContext { _.forTextComponents }
-							val targetDd = cFactories(DropDown).simple(viewsPointer, selectedLinkTargetPointer,
-								Some(Icon.arrowDown.small), Some(Icon.arrowUp.small),
-								DisplayFunction.noLocalization[ViewBuilder] { _.name },
-								Fixed("Link target"), Fixed("Select a view"))
-							val closeButton = cFactories(ImageButton).withIcon(Icon.closeTop.medium) {
-								currentLinkPointer.clear()
-							}
-							val deleteButton = cFactories(ImageButton)
-								.withColouredIcon(Icon.delete.medium, ColorRole.Error) {
-									currentLinkPointer.pop().foreach(currentView.removeLink)
-								}
-							
-							Vector(targetDd, closeButton, deleteButton)
-						}
-					}
-				// 3: Canvas
-				val canvas = new EditCanvasVc(currentViewPointer, factories.next().parentHierarchy)
-				canvas.addListener(EditCanvasListener)
-				
-				// The link area is shown only when a link is selected
-				Vector(
-					header.parent -> AlwaysTrue,
-					linkArea.parent -> isLinkSelectedPointer,
-					canvas.view -> AlwaysTrue
-				)
-			}
-	}
-	
 	private val lazyWindow = ResettableLazy {
-		val frame = Frame.windowed(view.parent, "Prototyper", Program, margins.medium,
-			getAnchor = Alignment.Top.origin)
-		frame.startEventGenerators(context.base.actorHandler)
-		frame.visible = true
-		frame
+		val window = ReachWindow.withContext(context.window.withAnchorAlignment(Top))
+			.using(ViewStack, title = "Prototyper") { (_, stackF) =>
+				// The view consists of 3 vertical elements where the 3rd is hidden at times:
+				// 1) Header
+				// 2) Canvas
+				// 3) Link View
+				stackF.build(Mixed)
+					.apply(marginPointer = Fixed(StackLength.fixedZero)) { factories =>
+						// 1: The header contains left & right -arrows, as well as an input field for the view name
+						// Also allows for setting the view as the first view, as well as view deletion
+						// [< | View Name | 1 | Delete | >]
+						val headerBg = primary.dark
+						val header = factories.next()(Framing).mapContext { _.against(headerBg) }.build(Stack)
+							.apply(margins.small.any, customDrawers = Vector(BackgroundDrawer(headerBg))) { stackF =>
+								stackF.build(Mixed).row() { factories =>
+									// Left & Right arrows
+									val arrows = Pair(Icon.arrowLeft, Icon.arrowRight).mapWithSides { (icon, end) =>
+										factories(ImageButton).withColouredIcon(icon.large, Primary,
+											insets = StackInsets.any.mapVertical { _.withLowPriority }) {
+											val currentIndex = views.indexOf(currentView)
+											val nextIndex = end match {
+												case First => if (currentIndex == 0) views.size - 1 else currentIndex - 1
+												case Last => if (currentIndex == views.size - 1) 0 else currentIndex + 1
+											}
+											currentView = views(nextIndex)
+										}
+									}
+									// Name field
+									val nameField = factories.mapContext { _.forTextComponents }(TextField)
+										.forString(length.field.medium.upscaling, fieldNamePointer = Fixed("View Name"),
+											textPointer = viewNameInputPointer)
+									// Is first -flag
+									val isFirstFlag = factories(CheckBox.full(Icon.oneFilled.large, Icon.oneEmpty.large))
+										.apply(isFirstViewPointer, isFirstViewPointer.map { !_ })
+									// Delete button
+									// TODO: Add enabled state
+									val deleteButton = factories(ImageButton)
+										.withColouredIcon(Icon.delete.large, ColorRole.Failure) {
+											if (views.hasSize > 1) {
+												// Deletes the view
+												val viewToRemove = currentView
+												val index = views.indexOf(viewToRemove)
+												if (index == 0)
+													currentView = views(1)
+												else
+													currentView = views(index - 1)
+												views = views.withoutIndex(index)
+												// Also deletes all links to that view
+												views.foreach { _.removeLinksTo(viewToRemove) }
+											}
+										}
+									
+									Vector(arrows.first, nameField, isFirstFlag, deleteButton, arrows.second)
+								}
+							}
+						// 2: Link view
+						// [ Target Dropdown | OK | Delete ]
+						val linkAreaBg = primary.default
+						val linkArea = factories.next()(Framing).mapContext { _.against(linkAreaBg) }.build(Stack)
+							.apply(margins.medium.any.toInsets.expandingToRight,
+								customDrawers = Vector(BackgroundDrawer(linkAreaBg))) { stackF =>
+								stackF.build(Mixed).row(Center, areRelated = true) { factories =>
+									val cFactories = factories.mapContext { _.forTextComponents }
+									val targetDd = cFactories
+										.mapContext { tx => context.window.withTextContext(tx).borderless }(DropDown)
+										.simple(viewsPointer, selectedLinkTargetPointer,
+											Some(Icon.arrowDown.small), Some(Icon.arrowUp.small),
+											DisplayFunction.noLocalization[ViewBuilder] { _.name },
+											Fixed("Link target"), Fixed("Select a view"))
+									val closeButton = cFactories(ImageButton).withIcon(Icon.closeTop.medium) {
+										currentLinkPointer.clear()
+									}
+									val deleteButton = cFactories(ImageButton)
+										.withColouredIcon(Icon.delete.medium, ColorRole.Failure) {
+											currentLinkPointer.pop().foreach(currentView.removeLink)
+										}
+									
+									Vector(targetDd, closeButton, deleteButton)
+								}
+							}
+						// 3: Canvas
+						val canvas = new EditCanvasVc(currentViewPointer, factories.next().parentHierarchy)
+						canvas.addListener(EditCanvasListener)
+						
+						// The link area is shown only when a link is selected
+						Vector(
+							header.parent -> AlwaysTrue,
+							linkArea.parent -> isLinkSelectedPointer,
+							canvas.view -> AlwaysTrue
+						)
+					}
+			}
+		window.display(centerOnParent = true)
+		window
 	}
 	
 	
@@ -197,7 +194,7 @@ class EditVc(original: Vector[View])
 	 * @return Future that resolves into edit results (views)
 	 */
 	def display() =
-		lazyWindow.resettingValueIterator.find { !_.isClosed }.get.closeFuture.map { _ =>
+		lazyWindow.resettingValueIterator.find { _.hasNotClosed }.get.closeFuture.map { _ =>
 			val firstViewIndex = views.indexOf(firstView)
 			val resultViews = views.map { _.result }
 			if (firstViewIndex >= 0)

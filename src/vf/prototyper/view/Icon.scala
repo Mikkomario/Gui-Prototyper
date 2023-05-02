@@ -5,7 +5,7 @@ import utopia.flow.util.StringExtensions._
 import utopia.genesis.image.Image
 import utopia.paradigm.measurement.DistanceExtensions._
 import utopia.paradigm.shape.shape2d.Size
-import utopia.reflection.image.SingleColorIcon
+import utopia.firmament.image.SingleColorIcon
 import vf.prototyper.util.Common._
 import vf.prototyper.view.Icon.{largeSize, mediumSize, smallSize}
 

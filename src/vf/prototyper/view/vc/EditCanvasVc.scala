@@ -5,15 +5,17 @@ import utopia.flow.view.mutable.eventful.PointerWithEvents
 import utopia.flow.view.template.eventful.Changing
 import utopia.genesis.event._
 import utopia.genesis.handling.{MouseButtonStateListener, MouseMoveHandlerType, MouseMoveListener}
-import utopia.genesis.util.{Drawer, Screen}
+import utopia.genesis.util.Screen
 import utopia.inception.handling.HandlerType
 import utopia.paradigm.color.Color
 import utopia.paradigm.shape.shape2d.{Bounds, Point, Size, Vector2D}
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.image.ViewImageLabel
 import utopia.reach.util.Priority.Low
-import utopia.reflection.component.drawing.template.DrawLevel.Foreground
-import utopia.reflection.component.drawing.template.{CustomDrawer, DrawLevel}
+import utopia.firmament.drawing.template.DrawLevel.Foreground
+import utopia.firmament.drawing.template.{CustomDrawer, DrawLevel}
+import utopia.genesis.graphics.{DrawSettings, Drawer, StrokeSettings}
+import utopia.paradigm.color.ColorShade.Light
 import vf.prototyper.model.event.CanvasEvent.{ClickEvent, DragEvent}
 import vf.prototyper.model.event.CanvasListener
 import vf.prototyper.model.mutable.ViewBuilder
@@ -30,8 +32,8 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 	
 	private val minDragDistance = 25
 	
-	private lazy val leftDragColor = primary.forBackgroundPreferringLight(Color.white).withAlpha(0.5)
-	private lazy val linkColor = secondary.forBackgroundPreferringLight(Color.white).withAlpha(0.33)
+	private lazy val leftDragColor = primary.against(Color.white, Light).withAlpha(0.5)
+	private lazy val linkColor = secondary.against(Color.white, Light).withAlpha(0.33)
 	
 	private val maxImageSize = Screen.size * Vector2D(1, 0.8)
 	private val imagePointer = viewPointer.map { _.image.fittingWithin(maxImageSize) }
@@ -69,15 +71,19 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 	
 	private object LinksDrawer extends CustomDrawer
 	{
+		// ATTRIBUTES   --------------------
+		
+		private implicit val ds: DrawSettings = DrawSettings.onlyFill(linkColor)
+		
+		
 		// IMPLEMENTED  --------------------
 		
 		override def opaque: Boolean = false
 		override def drawLevel: DrawLevel = Foreground
 		
 		override def draw(drawer: Drawer, bounds: Bounds): Unit = {
-			val d = drawer.onlyFill(linkColor)
 			currentView.links.foreach { link =>
-				d.draw(link.area * bounds.size + bounds.position)
+				drawer.draw(link.area * bounds.size + bounds.position)
 			}
 		}
 	}
@@ -85,6 +91,9 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 	private object CanvasMouseListener extends MouseButtonStateListener with MouseMoveListener with CustomDrawer
 	{
 		// ATTRIBUTES   --------------------
+		
+		private lazy val subViewDs = StrokeSettings(leftDragColor, strokeWidth = 2)
+		private lazy val linkDs = DrawSettings.onlyFill(linkColor)
 		
 		private var atClickButton: MouseButton = MouseButton.Left
 		
@@ -149,13 +158,8 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 		
 		override def draw(drawer: Drawer, bounds: Bounds): Unit = {
 			dragBoundsPointer.value.foreach { drag =>
-				val d = {
-					if (atClickButton == MouseButton.Left)
-						drawer.onlyEdges(leftDragColor).withStroke(2)
-					else
-						drawer.onlyFill(linkColor)
-				}
-				d.draw(drag)
+				implicit val ds: DrawSettings = if (atClickButton == MouseButton.Left) subViewDs else linkDs
+				drawer.draw(drag)
 			}
 		}
 		

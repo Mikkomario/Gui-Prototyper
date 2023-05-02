@@ -1,21 +1,24 @@
 package vf.prototyper.util
 
+import utopia.firmament.context.{BaseContext, ScrollingContext, WindowContext}
+import utopia.firmament.localization.{Localizer, NoLocalization}
+import utopia.firmament.model.Margins
 import utopia.flow.async.context.ThreadPool
 import utopia.flow.parse.file.FileExtensions._
+import utopia.flow.time.TimeExtensions._
 import utopia.flow.util.StringExtensions._
 import utopia.flow.util.logging.{Logger, SysErrLogger}
 import utopia.genesis.handling.ActorLoop
 import utopia.genesis.handling.mutable.ActorHandler
+import utopia.genesis.text.Font
 import utopia.genesis.util.Screen
+import utopia.paradigm.color.{ColorScheme, ColorSet}
 import utopia.paradigm.measurement.DistanceExtensions._
 import utopia.paradigm.measurement.Ppi
-import utopia.paradigm.shape.shape2d.Point
+import utopia.paradigm.shape.shape2d.{Insets, Point}
+import utopia.reach.container.RevalidationStyle.Delayed
+import utopia.reach.context.{ReachContentWindowContext, ReachWindowContext}
 import utopia.reach.cursor.{CursorSet, CursorType}
-import utopia.reflection.color.{ColorScheme, ColorSet}
-import utopia.reflection.component.context.{BaseContext, ScrollingContext}
-import utopia.reflection.localization.{Localizer, NoLocalization}
-import utopia.reflection.shape.Margins
-import utopia.reflection.text.Font
 
 import java.nio.file.Paths
 import scala.concurrent.ExecutionContext
@@ -37,7 +40,7 @@ object Common
 	/**
 	 * Execution context used for multi-threading
 	 */
-	implicit val exc: ExecutionContext = new ThreadPool("GUI-Prototyper").executionContext
+	implicit val exc: ExecutionContext = new ThreadPool("GUI-Prototyper")
 	/**
 	 * Pixels per inch of the local screen
 	 */
@@ -150,7 +153,7 @@ object Common
 		/**
 		 * Color scheme used
 		 */
-		val scheme = ColorScheme.twoTone(primary, secondary, gray)
+		val scheme = ColorScheme.default ++ ColorScheme.twoTone(primary, secondary)
 		
 		
 		// COMPUTED --------------------------
@@ -158,7 +161,7 @@ object Common
 		/**
 		 * The gray color set
 		 */
-		def gray = ColorScheme.defaultLightGray
+		def gray = scheme.gray
 	}
 	
 	object Context
@@ -167,6 +170,13 @@ object Common
 		 * The basic component creation context
 		 */
 		val base = BaseContext(actorHandler, Font("Arial", 0.6.cm.toPixels.toInt), Colors.scheme, margins)
+		/**
+		 * Window creation context
+		 */
+		implicit val window: ReachContentWindowContext = ReachWindowContext(
+			WindowContext.apply(actorHandler, screenBorderMargins = Insets.symmetric(margins.medium)),
+			Colors.gray.light, cursors, Delayed.by(0.1.seconds, 0.25.seconds))
+			.withContentContext(base)
 	}
 	
 	object Lengths
