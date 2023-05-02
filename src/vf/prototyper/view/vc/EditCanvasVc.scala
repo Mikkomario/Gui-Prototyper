@@ -49,6 +49,10 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 	
 	// INITIAL CODE --------------------------
 	
+	// TODO: Remove test prints
+	viewPointer.addContinuousListener { e => println(s"View changed from ${e.oldValue.name} to ${e.newValue.name}") }
+	imagePointer.addContinuousListener { _ => println(s"View image changed") }
+	
 	// Listens to user clicks and drags
 	view.addMouseButtonListener(CanvasMouseListener)
 	view.addMouseMoveListener(CanvasMouseListener)

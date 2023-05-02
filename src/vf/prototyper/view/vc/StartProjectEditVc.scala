@@ -4,6 +4,7 @@ import utopia.firmament.component.Window
 import utopia.firmament.model.HotKey
 import utopia.firmament.model.stack.LengthExtensions._
 import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.operator.EqualsFunction
 import utopia.flow.parse.file.FileConflictResolution.Rename
 import utopia.flow.parse.file.FileExtensions._
 import utopia.flow.parse.string.Regex

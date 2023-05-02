@@ -34,12 +34,11 @@ class ViewCanvasFactory(hierarchy: ComponentHierarchy)
 	/**
 	 * Creates a new view canvas
 	 * @param currentViewPointer Pointer to the currently displayed view
-	 * @param possibleViews All possible views
 	 * @param changeView A function that accepts the id of the view to present next, and presents it
 	 * @return A new view canvas
 	 */
-	def apply(currentViewPointer: Changing[View], possibleViews: IterableOnce[View])(changeView: Int => Unit) =
-		new ViewCanvas(hierarchy, currentViewPointer, possibleViews, changeView)
+	def apply(currentViewPointer: Changing[View])(changeView: Int => Unit) =
+		new ViewCanvas(hierarchy, currentViewPointer, changeView)
 }
 
 /**
@@ -47,8 +46,7 @@ class ViewCanvasFactory(hierarchy: ComponentHierarchy)
  * @author Mikko Hilpinen
  * @since 20.2.2023, v0.1
  */
-class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[View], possibleViews: IterableOnce[View],
-                 changeView: Int => Unit)
+class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[View], changeView: Int => Unit)
 	extends ReachComponentWrapper
 {
 	// ATTRIBUTES   ----------------------------
@@ -70,6 +68,9 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 	
 	
 	// INITIAL CODE ----------------------------
+	
+	// TODO: Remove test prints
+	imagePointer.addContinuousListener { _ => println("View image changed") }
 	
 	addMouseButtonListener(CanvasMouseListener)
 	

@@ -79,7 +79,7 @@ class ViewBuilder(val id: Int, initialName: String, val path: Path, val image: I
 		val view = new ViewBuilder(id, s"$name-sub", path, image.subImage(area * image.size),
 			Some(subRegion))
 		// Also creates a link to that view
-		links :+= new LinkBuilder(subRegion, view)
+		links :+= new LinkBuilder(area, view)
 		view
 	}
 	

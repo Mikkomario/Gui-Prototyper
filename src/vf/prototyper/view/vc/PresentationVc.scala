@@ -100,7 +100,7 @@ class PresentationVc(project: Project)
 						}
 					// The canvas view is an image with some interactivity
 					// TODO: Add draw capabilities
-					val canvas = factories.withoutContext(ViewCanvas).apply(currentViewPointer, views) { viewId =>
+					val canvas = factories.withoutContext(ViewCanvas).apply(currentViewPointer) { viewId =>
 						views.find { _.id == viewId }.foreach(goToView)
 					}
 					Vector(header.parent, canvas)
