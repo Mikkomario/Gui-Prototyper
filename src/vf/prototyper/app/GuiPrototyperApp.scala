@@ -1,11 +1,10 @@
 package vf.prototyper.app
 
+import utopia.flow.util.TryCatch
 import utopia.paradigm.generic.ParadigmDataType
 import vf.prototyper.model.immutable.Project
 import vf.prototyper.util.Common._
 import vf.prototyper.view.vc.{MainVc, StartProjectEditVc}
-
-import scala.util.{Failure, Success}
 
 /**
  * @author Mikko Hilpinen
@@ -16,10 +15,10 @@ object GuiPrototyperApp extends App
 	ParadigmDataType.setup()
 	
 	val initialProjects = Project.loadAll() match {
-		case Success((failures, projects)) =>
+		case TryCatch.Success(projects, failures) =>
 			failures.headOption.foreach { log(_, s"Failed to open ${failures.size} projects") }
 			projects.sortBy { _.name }
-		case Failure(error) =>
+		case TryCatch.Failure(error) =>
 			log(error, "Project-loading failed")
 			Vector()
 	}

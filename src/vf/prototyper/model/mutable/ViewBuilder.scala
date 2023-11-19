@@ -1,8 +1,8 @@
 package vf.prototyper.model.mutable
 
-import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.genesis.image.Image
-import utopia.paradigm.shape.shape2d.Bounds
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
 import vf.prototyper.model.immutable.View
 
 import java.nio.file.Path
@@ -35,11 +35,11 @@ class ViewBuilder(val id: Int, initialName: String, val path: Path, val image: I
 	/**
 	 * A mutable pointer to the name of this view
 	 */
-	val namePointer = new PointerWithEvents(initialName)
+	val namePointer = new EventfulPointer(initialName)
 	/**
 	 * A mutable pointer to the links within this view, each being represented with a mutable version
 	 */
-	val linksPointer = new PointerWithEvents(Vector[LinkBuilder]())
+	val linksPointer = new EventfulPointer(Vector[LinkBuilder]())
 	
 	
 	// COMPUTED -----------------------------

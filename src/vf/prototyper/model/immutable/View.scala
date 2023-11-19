@@ -12,7 +12,8 @@ import utopia.flow.view.mutable.Pointer
 import utopia.genesis.image.{Image, Pixels}
 import utopia.paradigm.color.Color
 import utopia.paradigm.generic.ParadigmValue._
-import utopia.paradigm.shape.shape2d.{Bounds, Size}
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.vector.size.Size
 import vf.prototyper.util.Common._
 
 import java.nio.file.{Path, Paths}

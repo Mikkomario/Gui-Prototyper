@@ -2,7 +2,7 @@ package vf.prototyper.model.immutable
 
 import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
 import utopia.flow.generic.model.template.ModelConvertible
-import utopia.paradigm.shape.shape2d.Bounds
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
 import utopia.flow.generic.casting.ValueConversions._
 import utopia.flow.generic.factory.FromModelFactoryWithSchema
 import utopia.flow.generic.model.mutable.DataType.IntType

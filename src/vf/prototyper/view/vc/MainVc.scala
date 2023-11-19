@@ -1,9 +1,10 @@
 package vf.prototyper.view.vc
 
 import utopia.firmament.controller.data.ContainerContentDisplayer
-import utopia.flow.operator.EqualsFunction
+import utopia.flow.operator.equality.EqualsFunction
 import utopia.flow.view.mutable.async.Volatile
-import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.flow.view.mutable.eventful.EventfulPointer
+import utopia.paradigm.color.ColorShade.Light
 import utopia.paradigm.enumeration.Alignment.TopLeft
 import utopia.reach.component.button.image.ImageButton
 import utopia.reach.component.factory.Mixed
@@ -12,10 +13,6 @@ import utopia.reach.component.wrapper.Open
 import utopia.reach.container.ReachCanvas
 import utopia.reach.container.multi.{MutableStack, Stack}
 import utopia.reach.container.wrapper.Framing
-import utopia.firmament.drawing.immutable.BackgroundDrawer
-import utopia.firmament.model.enumeration.StackLayout.Center
-import utopia.firmament.model.stack.LengthExtensions._
-import utopia.paradigm.color.ColorShade.Light
 import utopia.reach.window.ReachWindow
 import vf.prototyper.model.immutable.Project
 import vf.prototyper.util.Common._
@@ -33,7 +30,7 @@ class MainVc(initialProjects: Vector[Project])
 	
 	private val openProjectIdsPointer = Volatile(Set[String]())
 	
-	private val projectsPointer = new PointerWithEvents(initialProjects)
+	private val projectsPointer = new EventfulPointer(initialProjects)
 	
 	
 	// COMPUTED --------------------------
@@ -52,34 +49,31 @@ class MainVc(initialProjects: Vector[Project])
 		// The view consists of a header and a projects -list
 		val window = ReachWindow.withContext(context.window.withAnchorAlignment(TopLeft))
 			.using(Stack, title = "GUI-Prototyper") { (canvas, stackF) =>
-				stackF.build(Framing).withoutMargin() { framingF =>
+				stackF.withoutMargin.build(Framing) { framingF =>
 					implicit val cnv: ReachCanvas = canvas
 					// Header
 					// [ Projects | + ]
 					val headerBg = color.primary.dark
-					val header = framingF.mapContext { _.against(headerBg) }.build(Stack)
-						.apply(margins.small.any, Vector(BackgroundDrawer(headerBg))) { stackF =>
-							stackF.build(Mixed).row(Center) { factories =>
-								// The header contains a title label and a button for adding new projects
-								val titleLabel = factories
-									.mapContext { _.withTextExpandingToRight.larger }(TextLabel)
-									.apply("Projects")
-								val newButton = factories(ImageButton).withIcon(Icon.addCircle.large) { newProject() }
-								Vector(titleLabel, newButton)
-							}
+					val header = framingF.withBackground(headerBg).small.build(Stack) { stackF =>
+						stackF.centeredRow.build(Mixed) { factories =>
+							// The header contains a title label and a button for adding new projects
+							val titleLabel = factories
+								.mapContext { _.withTextExpandingToRight.larger }(TextLabel)
+								.apply("Projects")
+							val newButton = factories(ImageButton).icon(Icon.addCircle.large) { newProject() }
+							Vector(titleLabel, newButton)
 						}
+					}
 					// The projects list is mutable and separately managed
-					val listBg = color.gray.against(headerBg, Light)
-					val listFramingF = framingF.mapContext { _.against(listBg) }
-					val (projectsFrame, projectsStack) = listFramingF.build(MutableStack)
-						.apply(margins.small.any, Vector(BackgroundDrawer(listBg))) { stackF =>
-							stackF.apply[ProjectRow](areRelated = true)
-						}.toTuple
+					val listFramingF = framingF.withBackground(color.gray, Light).small
+					val (projectsFrame, projectsStack) = listFramingF.build(MutableStack) { stackF =>
+						stackF.related.apply[ProjectRow]()
+					}.toTuple
 					// Sets up content management for the stack
 					ContainerContentDisplayer.forImmutableStates(projectsStack, projectsPointer) {
 						EqualsFunction.by { p: Project => p.id }(EqualsFunction.default)
 					} { project =>
-						Open.withContext(listFramingF.context.forTextComponents).apply(ProjectRow) {
+						Open.withContext(listFramingF.context).apply(ProjectRow) {
 							_.apply(project)(viewProject)(editProject)(deleteProject)
 						}
 					}

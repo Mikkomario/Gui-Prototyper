@@ -7,6 +7,7 @@ import utopia.flow.async.context.ThreadPool
 import utopia.flow.parse.file.FileExtensions._
 import utopia.flow.time.TimeExtensions._
 import utopia.flow.util.StringExtensions._
+import utopia.flow.util.TryCatch
 import utopia.flow.util.logging.{Logger, SysErrLogger}
 import utopia.genesis.handling.ActorLoop
 import utopia.genesis.handling.mutable.ActorHandler
@@ -15,14 +16,15 @@ import utopia.genesis.util.Screen
 import utopia.paradigm.color.{ColorScheme, ColorSet}
 import utopia.paradigm.measurement.DistanceExtensions._
 import utopia.paradigm.measurement.Ppi
-import utopia.paradigm.shape.shape2d.{Insets, Point}
+import utopia.paradigm.shape.shape2d.insets.Insets
+import utopia.paradigm.shape.shape2d.vector.point.Point
+import utopia.paradigm.transform.Adjustment
 import utopia.reach.container.RevalidationStyle.Delayed
 import utopia.reach.context.{ReachContentWindowContext, ReachWindowContext}
 import utopia.reach.cursor.{CursorSet, CursorType}
 
 import java.nio.file.Paths
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
 
 /**
  * An interface for commonly used / shared values and items
@@ -61,6 +63,10 @@ object Common
 	 * Localization implementation used
 	 */
 	implicit val localizer: Localizer = NoLocalization
+	/**
+	 * Default adjustment level applied
+	 */
+	implicit val adjustment: Adjustment = Adjustment(0.25)
 	
 	private val actorLoop = new ActorLoop(actorHandler)
 	
@@ -76,18 +82,16 @@ object Common
 		// Loads the cursors from icon files. Logs failures.
 		val cursorDirectory = directory.data/"cursors"
 		import CursorType._
-		CursorSet.loadIcons(
-			Map[CursorType, (String, Point)](
-				(Default, ("cursor-arrow", Point(7, 4))),
-				(Interactive, ("cursor-hand", Point(9, 1))),
-				(Text, ("cursor-text", Point(12, 12)))
-			).view.mapValues { case (name, origin) =>
-				cursorDirectory/name.endingWith(".png") -> origin
-			}.toMap) match {
-				case Success((failures, cursors)) =>
+		val cursorPaths = Map[CursorType, (String, Point)](
+			(Default, ("cursor-arrow", Point(7, 4))),
+			(Interactive, ("cursor-hand", Point(9, 1))),
+			(Text, ("cursor-text", Point(12, 12))))
+			.view.mapValues { case (name, origin) => cursorDirectory / name.endingWith(".png") -> origin }.toMap
+		CursorSet.loadIcons(cursorPaths) match {
+				case TryCatch.Success(cursors, failures) =>
 					failures.headOption.foreach { error => log(error, s"Failed to load ${ failures.size } cursors") }
 					Some(cursors)
-				case Failure(error) =>
+				case TryCatch.Failure(error) =>
 					log(error, "Failed to load cursors")
 					None
 			}
@@ -173,9 +177,12 @@ object Common
 		/**
 		 * Window creation context
 		 */
-		implicit val window: ReachContentWindowContext = ReachWindowContext(
-			WindowContext.apply(actorHandler, screenBorderMargins = Insets.symmetric(margins.medium)),
-			Colors.gray.light, cursors, Delayed.by(0.1.seconds, 0.25.seconds))
+		implicit val window: ReachContentWindowContext = ReachWindowContext
+			.apply(
+				base = WindowContext.apply(actorHandler, screenBorderMargins = Insets.symmetric(margins.medium)),
+				background = Colors.gray.light,
+				cursors = cursors,
+				revalidationStyle = Delayed.by(0.1.seconds, 0.25.seconds))
 			.withContentContext(base)
 	}
 	

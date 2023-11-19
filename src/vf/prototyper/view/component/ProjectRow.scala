@@ -2,20 +2,19 @@ package vf.prototyper.view.component
 
 import utopia.firmament.component.display.RefreshableWithPointer
 import utopia.firmament.context.TextContext
-import utopia.firmament.model.enumeration.StackLayout.Center
-import utopia.firmament.model.stack.LengthExtensions._
-import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.firmament.model.enumeration.SizeCategory.Medium
+import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.paradigm.color.ColorRole
 import utopia.paradigm.color.ColorRole.Secondary
 import utopia.reach.component.button.image.ImageButton
 import utopia.reach.component.factory.FromContextComponentFactoryFactory.Ccff
-import utopia.reach.component.factory.{Mixed, TextContextualFactory}
+import utopia.reach.component.factory.Mixed
+import utopia.reach.component.factory.contextual.TextContextualFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.text.ViewTextLabel
 import utopia.reach.component.template.ReachComponentWrapper
 import utopia.reach.container.multi.Stack
 import vf.prototyper.model.immutable.Project
-import vf.prototyper.util.Common._
 import vf.prototyper.view.Icon
 
 object ProjectRow extends Ccff[TextContext, ContextualProjectRowFactory]
@@ -60,19 +59,18 @@ class ProjectRow(hierarchy: ComponentHierarchy, context: TextContext, initialPro
 {
 	// ATTRIBUTES   -----------------------
 	
-	override val contentPointer = new PointerWithEvents(initialProject)
+	override val contentPointer = new EventfulPointer(initialProject)
 	
 	private val namePointer = contentPointer.map { _.name }
 	
 	// Wraps a stack where the project name is displayed on the left and the buttons on the right
-	override protected val wrapped = Stack(hierarchy).withContext(context).build(Mixed)
-		.row(Center, cap = margins.medium.any, areRelated = true) { factories =>
+	override protected val wrapped = Stack(hierarchy).withContext(context).related.centeredRow.withCap(Medium)
+		.build(Mixed) { factories =>
 			val nameLabel = factories(ViewTextLabel).mapContext { _.withTextExpandingToRight }.apply(namePointer)
-			val viewButton = factories(ImageButton)
-				.withColouredIcon(Icon.slideShow.medium, Secondary) { viewAction(content) }
-			val editButton = factories(ImageButton).withColouredIcon(Icon.edit.medium, Secondary) { editAction(content) }
-			val deleteButton = factories(ImageButton).withColouredIcon(Icon.delete.medium,
-				ColorRole.Failure) { deleteAction(content) }
+			val viewButton = factories(ImageButton).icon(Icon.slideShow.medium, Some(Secondary)) { viewAction(content) }
+			val editButton = factories(ImageButton).icon(Icon.edit.medium, Some(Secondary)) { editAction(content) }
+			val deleteButton = factories(ImageButton)
+				.icon(Icon.delete.medium, Some(ColorRole.Failure)) { deleteAction(content) }
 			
 			Vector(nameLabel, viewButton, editButton, deleteButton)
 		}

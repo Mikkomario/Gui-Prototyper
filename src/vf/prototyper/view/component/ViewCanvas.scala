@@ -4,7 +4,7 @@ import utopia.firmament.drawing.template.DrawLevel.Foreground
 import utopia.firmament.drawing.template.{CustomDrawer, DrawLevel}
 import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.collection.immutable.caching.cache.Cache
-import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.flow.view.template.eventful.Changing
 import utopia.genesis.event._
 import utopia.genesis.graphics.{DrawSettings, Drawer, StrokeSettings}
@@ -15,12 +15,16 @@ import utopia.genesis.view.DragTracker
 import utopia.inception.handling.HandlerType
 import utopia.paradigm.measurement.DistanceExtensions._
 import utopia.paradigm.path.BezierPath
-import utopia.paradigm.shape.shape2d._
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.line.Line
+import utopia.paradigm.shape.shape2d.vector.Vector2D
+import utopia.paradigm.shape.shape2d.vector.point.Point
+import utopia.paradigm.shape.shape2d.vector.size.Size
 import utopia.reach.component.factory.ComponentFactoryFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.image.ViewImageLabel
 import utopia.reach.component.template.ReachComponentWrapper
-import utopia.reach.util.Priority.High
+import utopia.reach.drawing.Priority.High
 import vf.prototyper.model.immutable.View
 import vf.prototyper.util.Common._
 
@@ -63,8 +67,7 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		}
 	}
 	
-	override val wrapped = ViewImageLabel(hierarchy)
-		.apply(imagePointer, customDrawers = Vector(BezierHandler))
+	override val wrapped = ViewImageLabel(hierarchy).withCustomDrawer(BezierHandler).apply(imagePointer)
 	
 	
 	// INITIAL CODE ----------------------------
@@ -134,7 +137,7 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		
 		private var currentDistance = 0.0
 		
-		private val pointsPointer = new PointerWithEvents(Vector[Point]())
+		private val pointsPointer = new EventfulPointer(Vector[Point]())
 		
 		private val imagePointer = pointsPointer.mapAsync(Image.empty, skipInitialMap = true) { points =>
 			if (points.size < 3)

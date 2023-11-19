@@ -1,17 +1,16 @@
 package vf.prototyper.view.component
 
 import utopia.firmament.context.ColorContext
-import utopia.firmament.drawing.immutable.BackgroundDrawer
 import utopia.firmament.localization.LocalString._
 import utopia.firmament.localization.LocalizedString
-import utopia.firmament.model.enumeration.StackLayout.Center
-import utopia.firmament.model.stack.LengthExtensions._
 import utopia.flow.collection.CollectionExtensions._
-import utopia.flow.view.mutable.eventful.{PointerWithEvents, ResettableFlag}
+import utopia.flow.view.mutable.eventful.{EventfulPointer, ResettableFlag}
 import utopia.paradigm.color.ColorRole
-import utopia.paradigm.shape.shape2d.{Bounds, Point}
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.vector.point.Point
 import utopia.reach.component.factory.FromContextComponentFactoryFactory.Ccff
-import utopia.reach.component.factory.{ColorContextualFactory, Mixed}
+import utopia.reach.component.factory.Mixed
+import utopia.reach.component.factory.contextual.ColorContextualFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.image.ViewImageLabel
 import utopia.reach.component.label.text.{TextLabel, ViewTextLabel}
@@ -52,8 +51,8 @@ class ContextualFileDropAreaFactory(hierarchy: ComponentHierarchy, override val 
 	 * @tparam A Type of parsed items
 	 * @return A new file drop area component
 	 */
-	def apply[A](resultsPointer: PointerWithEvents[Vector[A]] =
-	             new PointerWithEvents[Vector[A]](Vector()))(parseFile: Path => Either[LocalizedString, A]) =
+	def apply[A](resultsPointer: EventfulPointer[Vector[A]] =
+	             new EventfulPointer[Vector[A]](Vector()))(parseFile: Path => Either[LocalizedString, A]) =
 		new FileDropArea[A](hierarchy, context, resultsPointer, parseFile)
 }
 
@@ -63,7 +62,7 @@ class ContextualFileDropAreaFactory(hierarchy: ComponentHierarchy, override val 
  * @since 19.2.2023, v0.1
  */
 class FileDropArea[A](hierarchy: ComponentHierarchy, context: ColorContext,
-                      resultsPointer: PointerWithEvents[Vector[A]], parseFile: Path => Either[LocalizedString, A])
+                      resultsPointer: EventfulPointer[Vector[A]], parseFile: Path => Either[LocalizedString, A])
 	extends ReachComponentWrapper with DragAndDropTarget
 {
 	// ATTRIBUTES   ------------------------
@@ -72,62 +71,60 @@ class FileDropArea[A](hierarchy: ComponentHierarchy, context: ColorContext,
 	
 	private val isDropOverPointer = ResettableFlag()
 	
-	private val errorPointer = new PointerWithEvents(LocalizedString.empty)
+	private val errorPointer = new EventfulPointer(LocalizedString.empty)
 	private val hasErrorPointer = errorPointer.map { !_.isEmpty }
 	
 	private val numberOfFilesPointer = resultsPointer.map { _.size }
 	private val hasFilesPointer = numberOfFilesPointer.map { _ > 0 }
 	
 	// Contains small margins in a white / light gray background
-	override protected val wrapped = Framing(hierarchy).withContext(context).build(Stack)
-		.apply(margins.small.any, Vector(BackgroundDrawer(bg))) { stackF =>
+	override protected val wrapped = Framing(hierarchy).withContext(context).small.withBackground(bg)
+		.build(Stack) { stackF =>
 			// Contains 3 rows of items:
 			// 1: Header
 			// 2: Number of files -indicator
 			// 3: Hint
-			stackF.mapContext { _.against(bg).forTextComponents }.build(Mixed)
-				.column(Center) { factories =>
-					val header = factories(TextLabel).apply("Drop files here")
-					// The file indicator shows a changing icon, and the actual read file count
-					val fileCountIndicator = factories(Stack).build(Mixed)
-						.row(Center, areRelated = true) { factories =>
-							val countLabel = factories(ViewTextLabel).apply(numberOfFilesPointer)
-							val imagePointer = hasFilesPointer
-								.mergeWith(hasErrorPointer, isDropOverPointer) { (hasFiles, hasError, isDropOver) =>
-									val icon = {
-										if (isDropOver)
-											Icon.scanDocument.large
-										else if (hasFiles)
-											Icon.fileSuccess.medium
-										else
-											Icon.scanDocument.medium
-									}
-									if (hasError)
-										icon.apply(factories.context.color(ColorRole.Failure))
-									else if (hasFiles)
-										icon.apply(factories.context.color(ColorRole.Success))
-									else
-										icon.against(bg)
-								}
-							val iconLabel = factories.withoutContext(ViewImageLabel).apply(imagePointer)
-							Vector(countLabel, iconLabel)
+			stackF.mapContext { _.forTextComponents }.centered.build(Mixed) { factories =>
+				val header = factories(TextLabel).apply("Drop files here")
+				// The file indicator shows a changing icon, and the actual read file count
+				val fileCountIndicator = factories(Stack).related.row.build(Mixed) { factories =>
+					val countLabel = factories(ViewTextLabel).apply(numberOfFilesPointer)
+					val imagePointer = hasFilesPointer
+						.mergeWith(hasErrorPointer, isDropOverPointer) { (hasFiles, hasError, isDropOver) =>
+							val icon = {
+								if (isDropOver)
+									Icon.scanDocument.large
+								else if (hasFiles)
+									Icon.fileSuccess.medium
+								else
+									Icon.scanDocument.medium
+							}
+							if (hasError)
+								icon.apply(factories.context.color(ColorRole.Failure))
+							else if (hasFiles)
+								icon.apply(factories.context.color(ColorRole.Success))
+							else
+								icon.against(bg)
 						}
-					val hintColorPointer = hasErrorPointer.map { hasError =>
-						if (hasError)
-							factories.context.color(ColorRole.Failure)
-						else
-							factories.context.hintTextColor
-					}
-					val hintTextPointer = errorPointer
-						.map[LocalizedString] { _.nonEmptyOrElse("You can also add\nfiles while editing") }
-					val hintLabel = factories.withoutContext(ViewTextLabel).forText(hintTextPointer,
-						hintColorPointer.map { color =>
-							factories.context.textDrawContext.mapFont { _ * 0.8 }
-								.copy(color = color, allowLineBreaks = true)
-						}, allowTextShrink = true)
-					
-					Vector(header, fileCountIndicator.parent, hintLabel)
+					val iconLabel = factories.withoutContext(ViewImageLabel).apply(imagePointer)
+					Vector(countLabel, iconLabel)
 				}
+				val hintColorPointer = hasErrorPointer.map { hasError =>
+					if (hasError)
+						factories.context.color(ColorRole.Failure)
+					else
+						factories.context.hintTextColor
+				}
+				val hintTextPointer = errorPointer
+					.map[LocalizedString] { _.nonEmptyOrElse("You can also add\nfiles while editing") }
+				val hintLabel = factories.withoutContext(ViewTextLabel).allowingTextToShrink.text(hintTextPointer,
+					hintColorPointer.map { color =>
+						factories.context.textDrawContext.mapFont { _ * 0.8 }
+							.copy(color = color, allowLineBreaks = true)
+					})
+				
+				Vector(header, fileCountIndicator.parent, hintLabel)
+			}
 		}
 	
 	

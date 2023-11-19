@@ -1,19 +1,16 @@
 package vf.prototyper.view.vc
 
 import utopia.firmament.component.Window
-import utopia.firmament.model.HotKey
 import utopia.firmament.model.stack.LengthExtensions._
 import utopia.flow.collection.CollectionExtensions._
-import utopia.flow.operator.EqualsFunction
 import utopia.flow.parse.file.FileConflictResolution.Rename
 import utopia.flow.parse.file.FileExtensions._
 import utopia.flow.parse.string.Regex
 import utopia.flow.util.StringExtensions._
-import utopia.flow.view.immutable.eventful.Fixed
 import utopia.flow.view.mutable.Pointer
-import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.paradigm.color.ColorRole.{Primary, Secondary}
-import utopia.paradigm.shape.shape2d.Insets
+import utopia.paradigm.shape.shape2d.insets.Insets
 import utopia.reach.component.button.image.ImageAndTextButton
 import utopia.reach.component.factory.Mixed
 import utopia.reach.component.input.text.TextField
@@ -26,7 +23,6 @@ import vf.prototyper.view.Icon
 import vf.prototyper.view.component.FileDropArea
 import vf.prototyper.view.vc.StartProjectEditVc.acceptedFileTypes
 
-import java.awt.event.KeyEvent
 import java.nio.file.Path
 import java.util.UUID
 import scala.concurrent.Future
@@ -50,14 +46,16 @@ class StartProjectEditVc(project: Option[Project] = None)
 		case None => Set[Path]()
 	}
 	
-	private val projectNamePointer = new PointerWithEvents(project match {
+	private val projectNamePointer = new EventfulPointer(project match {
 		case Some(project) => project.name
 		case None => "New Project"
 	})
-	private val viewFilesPointer = new PointerWithEvents(initialPaths.toVector)
+	private val viewFilesPointer = new EventfulPointer(initialPaths.toVector)
 	private val windowPointer = Pointer.empty[Window]()
 	
 	private var startFuture: Option[Future[Project]] = None
+	
+	private lazy val imageAndTextButtonFactory = ImageAndTextButton.withImageInsets(Insets.symmetric(margins.small).any)
 	
 	
 	// OTHER    -----------------------------
@@ -75,11 +73,11 @@ class StartProjectEditVc(project: Option[Project] = None)
 				// 3: Start & Cancel -buttons
 				val window = ReachWindow.withContext(context.window).withWindowBackground(color.primary)
 					.using(Framing, title = "Start project") { (_, framingF) =>
-						framingF.build(Stack).apply(margins.medium.any) { stackF =>
-							stackF.build(Mixed).apply() { factories =>
+						framingF.withInsets(margins.medium.any).build(Stack) { stackF =>
+							stackF.build(Mixed) { factories =>
 								val projectNameField = factories(TextField)
-									.forString(length.field.medium.upscaling, Fixed("Project Name"),
-										textPointer = projectNamePointer)
+									.withFieldName("Project Name")
+									.string(length.field.medium.upscaling, textPointer = projectNamePointer)
 								val dropArea = factories(FileDropArea)
 									.apply(viewFilesPointer) { p =>
 										if (acceptedFileTypes.contains(p.fileType))
@@ -87,22 +85,20 @@ class StartProjectEditVc(project: Option[Project] = None)
 										else
 											Left("Only image files are supported")
 									}
-								val buttons = factories(Stack)
+								val buttons = factories(Stack).row
 									.mapContext { _.forTextComponents.mapTextInsets { i => (i * 2).expandingHorizontally } }
-									.build(Mixed)
-									.row() { factories =>
-										val imageInsets = Insets.symmetric(margins.small).any
-										val startButton = factories.mapContext { _/Secondary }(ImageAndTextButton)
-											.withIcon(Icon.start.medium, "Start", imageInsets,
-												hotKeys = Set(HotKey.keyWithIndex(KeyEvent.VK_ENTER))) {
+									.build(Mixed) { factories =>
+										val startButton = factories.mapContext { _/Secondary }(imageAndTextButtonFactory)
+											.triggeredWithEnter
+											.apply(Icon.start.medium, "Start") {
 												// Moves to the edit view (at least one view is required, however)
 												if (viewFilesPointer.value.nonEmpty) {
 													start()
 												}
 											}
-										val cancelButton = factories.mapContext { _/Primary }(ImageAndTextButton)
-											.withIcon(Icon.cancel.medium, "Cancel", imageInsets,
-												hotKeys = Set(HotKey.keyWithIndex(KeyEvent.VK_ESCAPE))) {
+										val cancelButton = factories.mapContext { _/Primary }(imageAndTextButtonFactory)
+											.triggeredWithEscape
+											.apply(Icon.cancel.medium, "Cancel") {
 												windowPointer.value.foreach { _.close() }
 											}
 										Vector(startButton, cancelButton)

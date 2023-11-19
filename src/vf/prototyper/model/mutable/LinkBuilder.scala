@@ -1,7 +1,7 @@
 package vf.prototyper.model.mutable
 
-import utopia.flow.view.mutable.eventful.PointerWithEvents
-import utopia.paradigm.shape.shape2d.Bounds
+import utopia.flow.view.mutable.eventful.EventfulPointer
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
 import vf.prototyper.model.immutable.Link
 
 /**
@@ -17,7 +17,7 @@ class LinkBuilder(val area: Bounds, initialTarget: ViewBuilder)
 	/**
 	 * A mutable pointer to the link target view
 	 */
-	val targetPointer = new PointerWithEvents(initialTarget)
+	val targetPointer = new EventfulPointer(initialTarget)
 	
 	
 	// COMPUTED -----------------------------

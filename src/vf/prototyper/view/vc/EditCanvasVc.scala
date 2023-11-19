@@ -1,21 +1,24 @@
 package vf.prototyper.view.vc
 
 import utopia.flow.collection.immutable.Pair
-import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.flow.view.template.eventful.Changing
 import utopia.genesis.event._
 import utopia.genesis.handling.{MouseButtonStateListener, MouseMoveHandlerType, MouseMoveListener}
 import utopia.genesis.util.Screen
 import utopia.inception.handling.HandlerType
 import utopia.paradigm.color.Color
-import utopia.paradigm.shape.shape2d.{Bounds, Point, Size, Vector2D}
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.image.ViewImageLabel
-import utopia.reach.util.Priority.Low
+import utopia.reach.drawing.Priority.Low
 import utopia.firmament.drawing.template.DrawLevel.Foreground
 import utopia.firmament.drawing.template.{CustomDrawer, DrawLevel}
 import utopia.genesis.graphics.{DrawSettings, Drawer, StrokeSettings}
 import utopia.paradigm.color.ColorShade.Light
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.vector.Vector2D
+import utopia.paradigm.shape.shape2d.vector.point.Point
+import utopia.paradigm.shape.shape2d.vector.size.Size
 import vf.prototyper.model.event.CanvasEvent.{ClickEvent, DragEvent}
 import vf.prototyper.model.event.CanvasListener
 import vf.prototyper.model.mutable.ViewBuilder
@@ -41,8 +44,8 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 	/**
 	 * The controlled view
 	 */
-	val view = ViewImageLabel(hierarchy)
-		.withStaticLayout(imagePointer, customDrawers = Vector(LinksDrawer, CanvasMouseListener))
+	val view = ViewImageLabel(hierarchy).withAdditionalCustomDrawers(Vector(LinksDrawer, CanvasMouseListener))
+		.apply(imagePointer)
 	
 	private var listeners = Vector[CanvasListener]()
 	
@@ -101,7 +104,7 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 		
 		private var atClickButton: MouseButton = MouseButton.Left
 		
-		private val dragPointer = PointerWithEvents.empty[Pair[Point]]()
+		private val dragPointer = EventfulPointer.empty[Pair[Point]]()
 		
 		private val dragBoundsPointer = dragPointer.map { _.map(Bounds.between) }
 		private val isDraggingPointer = dragPointer.lazyMap { _.isDefined }
@@ -113,7 +116,7 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 		
 		// Repaints when drag changes
 		dragBoundsPointer.addContinuousListener { event =>
-			view.repaintArea(Bounds.around(event.toPair.flatten).enlarged(Size.square(2)) - view.position, Low)
+			view.repaintArea(Bounds.around(event.values.flatten).enlarged(Size.square(2)) - view.position, Low)
 		}
 		
 		

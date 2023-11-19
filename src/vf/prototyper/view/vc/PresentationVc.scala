@@ -1,26 +1,22 @@
 package vf.prototyper.view.vc
 
-import utopia.firmament.drawing.immutable.BackgroundDrawer
 import utopia.firmament.localization.DisplayFunction
 import utopia.firmament.localization.LocalString._
-import utopia.firmament.model.enumeration.StackLayout.Center
-import utopia.firmament.model.stack.LengthExtensions._
 import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.collection.immutable.caching.cache.Cache
 import utopia.flow.view.immutable.eventful.Fixed
 import utopia.flow.view.mutable.Pointer
-import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.paradigm.enumeration.Alignment.Top
 import utopia.reach.component.button.image.ImageButton
 import utopia.reach.component.factory.Mixed
-import utopia.reach.component.input.selection.DropDown
 import utopia.reach.container.multi.Stack
 import utopia.reach.container.wrapper.Framing
 import utopia.reach.window.ReachWindow
 import vf.prototyper.model.immutable.{Project, View}
 import vf.prototyper.util.Common._
-import vf.prototyper.view.Icon
 import vf.prototyper.view.component.ViewCanvas
+import vf.prototyper.view.{Component, Icon}
 
 /**
  * Control the presentation view
@@ -43,8 +39,8 @@ class PresentationVc(project: Project)
 			} }
 	}
 	
-	private val currentViewPointer = new PointerWithEvents(views.head)
-	private val selectedViewPointer = new PointerWithEvents[Option[View]](Some(currentView))
+	private val currentViewPointer = new EventfulPointer(views.head)
+	private val selectedViewPointer = new EventfulPointer[Option[View]](Some(currentView))
 	
 	private val viewHistoryPointer = Pointer(Vector[View]())
 	private val undoHistoryPointer = Pointer(Vector[View]())
@@ -74,30 +70,26 @@ class PresentationVc(project: Project)
 		// The view consists of a header + canvas
 		val window = ReachWindow.withContext(context.window.withAnchorAlignment(Top))
 			.using(Stack, title = project.name.localizationSkipped) { (_, stackF) =>
-				stackF.build(Mixed).withoutMargin() { factories =>
+				stackF.withoutMargin.build(Mixed) { factories =>
 					// The header contains navigation arrow buttons and a select view -drop-down
 					// [ <- | View | ^ | -> ]
 					val headerBg = color.primary.dark
-					val header = factories(Framing)
-						.mapContext { _.against(headerBg) }.build(Stack)
-						.apply(margins.small.any, Vector(BackgroundDrawer(headerBg))) { stackF =>
-							stackF.build(Mixed).row(Center) { factories =>
-								// Buttons for navigation
-								// TODO: Add enabled states
-								val buttons = factories(ImageButton)
-								val backButton = buttons.withIcon(Icon.arrowLeft.large) { goBack() }
-								val forwardButton = buttons.withIcon(Icon.arrowRight.large) { goForward() }
-								val upButton = buttons.withIcon(Icon.arrowUp.large) { goToParent() }
-								// Drop-down for view-selection
-								val dropDown = factories
-									.mapContext { tx => context.window.withTextContext(tx).borderless }(DropDown)
-									.simple(Fixed(views), selectedViewPointer,
-										Some(Icon.arrowDown.small), Some(Icon.arrowUp.small),
-										DisplayFunction.noLocalization[View] { _.name })
-								
-								Vector(backButton, dropDown, upButton, forwardButton)
-							}
+					val header = factories(Framing).small.withBackground(color.primary.dark).build(Stack) { stackF =>
+						stackF.centeredRow.build(Mixed) { factories =>
+							// Buttons for navigation
+							// TODO: Add enabled states
+							val buttons = factories(ImageButton)
+							val backButton = buttons.icon(Icon.arrowLeft.large) { goBack() }
+							val forwardButton = buttons.icon(Icon.arrowRight.large) { goForward() }
+							val upButton = buttons.icon(Icon.arrowUp.large) { goToParent() }
+							// Drop-down for view-selection
+							val dropDown = Component.dropDownFrom(factories)
+								.simple(Fixed(views), selectedViewPointer,
+									displayFunction = DisplayFunction.noLocalization[View] { _.name })
+							
+							Vector(backButton, dropDown, upButton, forwardButton)
 						}
+					}
 					// The canvas view is an image with some interactivity
 					// TODO: Add draw capabilities
 					val canvas = factories.withoutContext(ViewCanvas).apply(currentViewPointer) { viewId =>

@@ -33,7 +33,7 @@ object Project
 	 * @return Success or failure. On success, returns failed project loads and successful loads.
 	 */
 	def loadAll() =
-		directory.projects.tryIterateChildren { _.map { p => apply(p).pull }.toTryCatch }
+		directory.projects.tryIterateChildrenCatching { _.map { p => apply(p).pull }.toTryCatch }
 	
 	
 	// NESTED   ---------------------------
@@ -65,7 +65,7 @@ object Project
  * @since 19.2.2023, v0.1
  * @param id Unique id of this project
  * @param name Name of this project
- * @path Path to this project's json file
+ * @param path Path to this project's json file
  * @param views Views that belong to this project
  */
 case class Project(id: String, name: String, path: Path, views: Vector[View]) extends ModelConvertible
