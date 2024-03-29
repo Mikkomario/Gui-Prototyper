@@ -67,8 +67,6 @@ class FileDropArea[A](hierarchy: ComponentHierarchy, context: TextContext,
 {
 	// ATTRIBUTES   ------------------------
 	
-	private val bg = context.color.light.gray
-	
 	private val isDropOverPointer = ResettableFlag()
 	
 	private val errorPointer = EventfulPointer(LocalizedString.empty)
@@ -110,17 +108,10 @@ class FileDropArea[A](hierarchy: ComponentHierarchy, context: TextContext,
 					val iconLabel = factories(ViewImageLabel).apply(imagePointer)
 					Vector(countLabel, iconLabel)
 				}
-				val hintColorPointer = hasErrorPointer.map { hasError =>
-					if (hasError)
-						factories.context.color.failure
-					else
-						factories.context.hintTextColor
-				}
 				val hintTextPointer = errorPointer
 					.map[LocalizedString] { _.nonEmptyOrElse("You can also add\nfiles while editing") }
-				val labelBaseContext = factories.context.mapFont { _ * 0.8 }.withShrinkingText.manyLines
 				val hintLabel = factories(ViewTextLabel)
-					.withContextPointer(hintColorPointer.map(labelBaseContext.against))
+					.mapContext { _.mapFont { _ * 0.8 }.withShrinkingText.manyLines }
 					.text(hintTextPointer)
 				
 				Vector(header, fileCountIndicator.parent, hintLabel)
