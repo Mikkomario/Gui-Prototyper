@@ -11,6 +11,7 @@ import utopia.flow.util.StringExtensions._
 import utopia.flow.util.TryCatch
 import utopia.flow.util.logging.{Logger, SysErrLogger}
 import utopia.genesis.handling.action.{ActionLoop, ActorHandler}
+import utopia.genesis.handling.event.keyboard.KeyboardEvents
 import utopia.genesis.text.Font
 import utopia.genesis.util.Screen
 import utopia.paradigm.color.{ColorScheme, ColorSet}
@@ -98,6 +99,9 @@ object Common
 	// INITIAL CODE ------------------------
 	
 	actorLoop.runAsync()
+	
+	KeyboardEvents.specifyExecutionContext(exc)
+	KeyboardEvents.setupKeyDownEvents(actorHandler)
 	
 	
 	// COMPUTED ----------------------------
