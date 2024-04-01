@@ -14,6 +14,8 @@ import utopia.genesis.handling.event.consume.ConsumeChoice.{Consume, Preserve}
 import utopia.genesis.handling.event.mouse._
 import utopia.genesis.image.Image
 import utopia.genesis.util.Screen
+import utopia.paradigm.color.Color
+import utopia.paradigm.color.ColorShade.Light
 import utopia.paradigm.measurement.DistanceExtensions._
 import utopia.paradigm.path.BezierPath
 import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
@@ -23,7 +25,9 @@ import utopia.paradigm.shape.shape2d.vector.point.Point
 import utopia.reach.component.factory.ComponentFactoryFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.image.ViewImageLabel
-import utopia.reach.component.template.ReachComponentWrapper
+import utopia.reach.component.template.{CursorDefining, ReachComponentWrapper}
+import utopia.reach.cursor.CursorType.Default
+import utopia.reach.cursor.{Cursor, CursorType}
 import vf.prototyper.model.immutable.View
 import vf.prototyper.util.Common._
 
@@ -52,7 +56,7 @@ class ViewCanvasFactory(hierarchy: ComponentHierarchy)
  */
 class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[View], possibleViews: IterableOnce[View],
                  changeView: Int => Unit)
-	extends ReachComponentWrapper
+	extends ReachComponentWrapper with CursorDefining
 {
 	// ATTRIBUTES   ----------------------------
 	
@@ -95,10 +99,23 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		possibleViews.iterator.foreach { viewImageCache(_).waitFor() }
 	}*/
 	
+	this.register()
+	
 	
 	// COMPUTED --------------------------------
 	
 	private def currentView = currentViewPointer.value
+	
+	override def cursorType: CursorType = Default
+	override def cursorBounds: Bounds = bounds
+	
+	override def cursorToImage(cursor: Cursor, position: Point): Image = {
+		val relativePoint = position / bounds.size
+		if (currentView.links.exists { _.area.contains(relativePoint) })
+			cursor.proposing(color.secondary.against(Color.white))
+		else
+			cursor.over(Light)
+	}
 	
 	
 	// NESTED   --------------------------------
@@ -135,6 +152,7 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		
 		private val minDistance = 1.0.cm.toPixels
 		private val step = 0.2
+		private val enlargement = 5
 		
 		override val mouseDragEventFilter = MouseDragEvent.filter.left && MouseEvent.filter.over(boundsInsideTop)
 		
@@ -151,9 +169,11 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 				val actualStep = step / points.size
 				val pathPoints = Iterator.iterate(0.0) { _ + actualStep }.takeWhile { _ <= 1.0 }.map(path.apply).toVector
 				val pathBounds = Bounds.between(Point.topLeft(pathPoints), Point.bottomRight(pathPoints))
+					.enlarged(enlargement)
+				val shift = Vector2D.twice(enlargement)
 				// println(s"Path bounds: $pathBounds")
 				val res = Image.paint(pathBounds.size) { drawer =>
-					pathPoints.map { _ - pathBounds.position }.paired.foreach { p => drawer.draw(Line(p)) }
+					pathPoints.map { _ - pathBounds.position + shift }.paired.foreach { p => drawer.draw(Line(p)) }
 				}.withOrigin(-pathBounds.position)
 				// println("Image created")
 				res

@@ -60,9 +60,6 @@ class StartProjectEditVc(project: Option[Project] = None)
 			.using(Framing, title = "Start project") { (_, framingF) =>
 				framingF.build(Stack) { stackF =>
 					stackF.build(Mixed) { factories =>
-						val projectNameField = factories(TextField)
-							.withFieldName("Project name")
-							.string(length.field.medium.upscaling, textPointer = projectNamePointer)
 						val dropArea = factories(FileDropArea)
 							.apply(viewFilesPointer) { p =>
 								if (acceptedFileTypes.contains(p.fileType))
@@ -70,6 +67,9 @@ class StartProjectEditVc(project: Option[Project] = None)
 								else
 									Left("Only image files are supported")
 							}
+						val projectNameField = factories(TextField)
+							.withFieldName("Project name")
+							.string(length.field.medium.upscaling, textPointer = projectNamePointer)
 						val buttons = factories(Stack)
 							.mapContext { _.mapTextInsets { i => (i * 2).expandingHorizontally } }
 							.row
@@ -89,7 +89,7 @@ class StartProjectEditVc(project: Option[Project] = None)
 								Vector(startButton, cancelButton)
 							}
 						
-						Vector(projectNameField, dropArea, buttons.parent)
+						Vector(dropArea, projectNameField, buttons.parent)
 					}
 				}
 		}

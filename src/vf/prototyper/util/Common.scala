@@ -85,7 +85,7 @@ object Common
 				(Text, ("cursor-text", Point(12, 12)))
 			).view.mapValues { case (name, origin) =>
 				cursorDirectory/name.endingWith(".png") -> origin
-			}.toMap) match {
+			}.toMap, drawEdgesFor = Set(Default, Interactive)) match {
 				case TryCatch.Success(cursors, failures) =>
 					failures.headOption.foreach { error => log(error, s"Failed to load ${ failures.size } cursors") }
 					Some(cursors)
