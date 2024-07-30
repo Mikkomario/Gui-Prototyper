@@ -15,6 +15,7 @@
       <element id="directory" name="data">
         <element id="dir-copy" path="$PROJECT_DIR$/data" />
       </element>
+      <element id="file-copy" path="$PROJECT_DIR$/README.md" />
     </root>
   </artifact>
 </component>
