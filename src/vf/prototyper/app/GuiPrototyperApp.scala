@@ -7,6 +7,7 @@ import vf.prototyper.util.Common._
 import vf.prototyper.view.vc.{MainVc, StartProjectEditVc}
 
 /**
+ * The main application class of this project
  * @author Mikko Hilpinen
  * @since 15.2.2023, v0.1
  */
@@ -15,7 +16,7 @@ object GuiPrototyperApp extends App
 	ParadigmDataType.setup()
 	
 	val initialProjects = Project.loadAll() match {
-		case TryCatch.Success(projects, failures) =>
+		case TryCatch.Success(projects: Vector[Project], failures) =>
 			failures.headOption.foreach { log(_, s"Failed to open ${failures.size} projects") }
 			projects.sortBy { _.name }
 		case TryCatch.Failure(error) =>

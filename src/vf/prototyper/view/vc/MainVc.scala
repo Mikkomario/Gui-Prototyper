@@ -119,7 +119,7 @@ class MainVc(initialProjects: Vector[Project])
 	}
 	
 	// Returns true if can open
-	private def tryOpen(project: Project) = openProjectIdsPointer.pop { ids =>
+	private def tryOpen(project: Project) = openProjectIdsPointer.mutate { ids =>
 		if (ids.contains(project.id))
 			false -> ids
 		else
