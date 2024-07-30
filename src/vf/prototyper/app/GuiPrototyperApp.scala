@@ -1,31 +1,28 @@
 package vf.prototyper.app
 
+import utopia.flow.util.TryCatch
 import utopia.paradigm.generic.ParadigmDataType
-import utopia.reflection.container.stack.StackHierarchyManager
 import vf.prototyper.model.immutable.Project
 import vf.prototyper.util.Common._
 import vf.prototyper.view.vc.{MainVc, StartProjectEditVc}
 
-import scala.util.{Failure, Success}
-
 /**
+ * The main application class of this project
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 object GuiPrototyperApp extends App
 {
 	ParadigmDataType.setup()
 	
 	val initialProjects = Project.loadAll() match {
-		case Success((failures, projects)) =>
+		case TryCatch.Success(projects: Vector[Project], failures) =>
 			failures.headOption.foreach { log(_, s"Failed to open ${failures.size} projects") }
 			projects.sortBy { _.name }
-		case Failure(error) =>
+		case TryCatch.Failure(error) =>
 			log(error, "Project-loading failed")
 			Vector()
 	}
-	
-	StackHierarchyManager.startRevalidationLoop()
 	
 	// Case: No projects to start with => Goes directly to new project view
 	if (initialProjects.isEmpty)

@@ -33,7 +33,7 @@ object Project
 	 * @return Success or failure. On success, returns failed project loads and successful loads.
 	 */
 	def loadAll() =
-		directory.projects.tryIterateChildren { _.map { p => apply(p).pull }.toTryCatch }
+		directory.projects.tryIterateChildrenCatching { _.map { p => apply(p).pull }.toTryCatch }
 	
 	
 	// NESTED   ---------------------------
@@ -51,7 +51,7 @@ object Project
 		
 		// IMPLEMENTED  -------------------
 		
-		override def apply(model: ModelLike[Property]): Try[Project] = schema.validate(model).toTry.flatMap { model =>
+		override def apply(model: ModelLike[Property]): Try[Project] = schema.validate(model).flatMap { model =>
 			model("views").tryVectorWith { v => View(v.getModel) }.map { views =>
 				Project(model("id").getString, model("name").getString, path, views)
 			}
@@ -62,10 +62,10 @@ object Project
 /**
  * Represents a project or an application, which consists of multiple views
  * @author Mikko Hilpinen
- * @since 19.2.2023, v0.1
+ * @since 19.2.2023, v1.0
  * @param id Unique id of this project
  * @param name Name of this project
- * @path Path to this project's json file
+ * @param path to this project's json file
  * @param views Views that belong to this project
  */
 case class Project(id: String, name: String, path: Path, views: Vector[View]) extends ModelConvertible

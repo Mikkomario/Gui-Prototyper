@@ -1,24 +1,17 @@
 package vf.prototyper.view.vc
 
-import utopia.flow.collection.immutable.caching.cache.Cache
+import utopia.firmament.localization.DisplayFunction
+import utopia.firmament.localization.LocalString._
 import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.collection.immutable.caching.cache.Cache
 import utopia.flow.view.immutable.eventful.Fixed
 import utopia.flow.view.mutable.Pointer
-import utopia.flow.view.mutable.eventful.PointerWithEvents
-import utopia.paradigm.enumeration.Alignment.Top
+import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.reach.component.button.image.ImageButton
 import utopia.reach.component.factory.Mixed
-import utopia.reach.component.input.selection.DropDown
-import utopia.reach.container.ReachCanvas
-import utopia.reach.container.multi.stack.Stack
+import utopia.reach.container.multi.Stack
 import utopia.reach.container.wrapper.Framing
-import utopia.reflection.component.drawing.immutable.BackgroundDrawer
-import utopia.reflection.container.stack.StackLayout.Center
-import utopia.reflection.container.swing.window.Frame
-import utopia.reflection.container.swing.window.WindowResizePolicy.Program
-import utopia.reflection.localization.DisplayFunction
-import utopia.reflection.shape.LengthExtensions._
-import utopia.reflection.localization.LocalString._
+import utopia.reach.window.ReachWindow
 import vf.prototyper.model.immutable.{Project, View}
 import vf.prototyper.util.Common._
 import vf.prototyper.view.Icon
@@ -27,7 +20,7 @@ import vf.prototyper.view.component.ViewCanvas
 /**
  * Control the presentation view
  * @author Mikko Hilpinen
- * @since 20.2.2023, v0.1
+ * @since 20.2.2023, v1.0
  */
 class PresentationVc(project: Project)
 {
@@ -45,45 +38,11 @@ class PresentationVc(project: Project)
 			} }
 	}
 	
-	private val currentViewPointer = new PointerWithEvents(views.head)
-	private val selectedViewPointer = new PointerWithEvents[Option[View]](Some(currentView))
+	private val currentViewPointer = EventfulPointer(views.head)
+	private val selectedViewPointer = EventfulPointer[Option[View]](Some(currentView))
 	
 	private val viewHistoryPointer = Pointer(Vector[View]())
 	private val undoHistoryPointer = Pointer(Vector[View]())
-	
-	// The view consists of a header + canvas
-	private val view = ReachCanvas(cursors) { hierarchy =>
-		Stack(hierarchy).withContext(context.base).build(Mixed).withoutMargin() { factories =>
-			// The header contains navigation arrow buttons and a select view -drop-down
-			// [ <- | View | ^ | -> ]
-			val headerBg = color.primary.dark
-			val header = factories(Framing)
-				.mapContext { _.inContextWithBackground(headerBg).forTextComponents }.build(Stack)
-				.apply(margins.small.any, Vector(BackgroundDrawer(headerBg))) { stackF =>
-					stackF.build(Mixed).row(Center) { factories =>
-						// Buttons for navigation
-						// TODO: Add enabled states
-						val buttons = factories(ImageButton)
-						val backButton = buttons.withIcon(Icon.arrowLeft.large) { goBack() }
-						val forwardButton = buttons.withIcon(Icon.arrowRight.large) { goForward() }
-						val upButton = buttons.withIcon(Icon.arrowUp.large) { goToParent() }
-						// Drop-down for view-selection
-						val dropDown = factories(DropDown)
-							.simple(Fixed(views), selectedViewPointer,
-								Some(Icon.arrowDown.small), Some(Icon.arrowUp.small),
-								DisplayFunction.noLocalization[View] { _.name })
-						
-						Vector(backButton, dropDown, upButton, forwardButton)
-					}
-				}
-			// The canvas view is an image with some interactivity
-			// TODO: Add draw capabilities
-			val canvas = factories.withoutContext(ViewCanvas).apply(currentViewPointer, views) { viewId =>
-				views.find { _.id == viewId }.foreach(goToView)
-			}
-			Vector(header.parent, canvas)
-		}
-	}.parent
 	
 	
 	// INITIAL CODE --------------------------
@@ -107,11 +66,39 @@ class PresentationVc(project: Project)
 	 * @return A future that resolves when this view is closed
 	 */
 	def display() = {
-		val frame = Frame.windowed(view, project.name.localizationSkipped, Program, margins.medium,
-			getAnchor = Top.origin)
-		frame.startEventGenerators(actorHandler)
-		frame.visible = true
-		frame.closeFuture
+		// The view consists of a header + canvas
+		val window = ReachWindow.withContext(context.window.withWindowBackground(color.primary.dark))
+			.using(Stack, title = project.name.localizationSkipped) { (_, stackF) =>
+				stackF.withoutMargin.build(Mixed) { factories =>
+					// The header contains navigation arrow buttons and a select view -drop-down
+					// [ <- | View | ^ | -> ]
+					val header = factories(Framing).small.build(Stack) { stackF =>
+						stackF.centeredRow.build(Mixed) { factories =>
+							// Buttons for navigation
+							// TODO: Add enabled states
+							val buttons = factories(ImageButton)
+							val backButton = buttons.icon(Icon.arrowLeft.large) { goBack() }
+							val forwardButton = buttons.icon(Icon.arrowRight.large) { goForward() }
+							val upButton = buttons.icon(Icon.arrowUp.large) { goToParent() }
+							// Drop-down for view-selection
+							val dropDown = factories.mapContext(context.window.withTextContext)(component.dropDown)
+								.simple(Fixed(views), selectedViewPointer,
+									DisplayFunction.noLocalization[View] { _.name })
+							
+							Vector(backButton, dropDown, upButton, forwardButton)
+						}
+					}
+					// The canvas view is an image with some interactivity
+					// TODO: Add draw capabilities
+					val canvas = factories.withoutContext(ViewCanvas).apply(currentViewPointer, views) { viewId =>
+						views.find { _.id == viewId }.foreach(goToView)
+					}
+					Vector(header.parent, canvas)
+				}
+			}
+		
+		window.display(centerOnParent = true)
+		window.closeFuture
 	}
 	
 	private def goBack() = viewHistoryPointer.popLast().foreach { view =>

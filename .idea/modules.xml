@@ -2,14 +2,13 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../Utopia/BunnyMunch/BunnyMunch.iml" filepath="$PROJECT_DIR$/../Utopia/BunnyMunch/BunnyMunch.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../Utopia/Flow/Flow.iml" filepath="$PROJECT_DIR$/../Utopia/Flow/Flow.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../Utopia/Genesis/Genesis.iml" filepath="$PROJECT_DIR$/../Utopia/Genesis/Genesis.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Utopia-Scala/BunnyMunch/BunnyMunch.iml" filepath="$PROJECT_DIR$/../Utopia-Scala/BunnyMunch/BunnyMunch.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Utopia-Scala/Firmament/Firmament.iml" filepath="$PROJECT_DIR$/../Utopia-Scala/Firmament/Firmament.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Utopia-Scala/Flow/Flow.iml" filepath="$PROJECT_DIR$/../Utopia-Scala/Flow/Flow.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Utopia-Scala/Genesis/Genesis.iml" filepath="$PROJECT_DIR$/../Utopia-Scala/Genesis/Genesis.iml" />
       <module fileurl="file://$PROJECT_DIR$/Gui-Prototyper.iml" filepath="$PROJECT_DIR$/Gui-Prototyper.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../Utopia/Inception/Inception.iml" filepath="$PROJECT_DIR$/../Utopia/Inception/Inception.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../Utopia/Paradigm/Paradigm.iml" filepath="$PROJECT_DIR$/../Utopia/Paradigm/Paradigm.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../Utopia/Reach/Reach.iml" filepath="$PROJECT_DIR$/../Utopia/Reach/Reach.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../Utopia/Reflection/Reflection.iml" filepath="$PROJECT_DIR$/../Utopia/Reflection/Reflection.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Utopia-Scala/Paradigm/Paradigm.iml" filepath="$PROJECT_DIR$/../Utopia-Scala/Paradigm/Paradigm.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Utopia-Scala/Reach/Reach.iml" filepath="$PROJECT_DIR$/../Utopia-Scala/Reach/Reach.iml" />
     </modules>
   </component>
 </project>

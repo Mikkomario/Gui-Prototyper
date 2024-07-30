@@ -1,19 +1,23 @@
 package vf.prototyper.view.vc
 
+import utopia.firmament.drawing.template.CustomDrawer
 import utopia.flow.collection.immutable.Pair
-import utopia.flow.view.mutable.eventful.PointerWithEvents
-import utopia.flow.view.template.eventful.Changing
-import utopia.genesis.event._
-import utopia.genesis.handling.{MouseButtonStateListener, MouseMoveHandlerType, MouseMoveListener}
-import utopia.genesis.util.{Drawer, Screen}
-import utopia.inception.handling.HandlerType
+import utopia.flow.operator.filter.{AcceptAll, Filter}
+import utopia.flow.view.immutable.eventful.AlwaysTrue
+import utopia.flow.view.mutable.eventful.EventfulPointer
+import utopia.flow.view.template.eventful.{Changing, FlagLike}
+import utopia.genesis.graphics.DrawLevel.Foreground
+import utopia.genesis.graphics.Priority.Low
+import utopia.genesis.graphics.{DrawLevel, DrawSettings, Drawer, StrokeSettings}
+import utopia.genesis.handling.event.mouse._
+import utopia.genesis.util.Screen
 import utopia.paradigm.color.Color
-import utopia.paradigm.shape.shape2d.{Bounds, Point, Size, Vector2D}
+import utopia.paradigm.color.ColorShade.Light
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.vector.Vector2D
+import utopia.paradigm.shape.shape2d.vector.point.Point
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.label.image.ViewImageLabel
-import utopia.reach.util.Priority.Low
-import utopia.reflection.component.drawing.template.DrawLevel.Foreground
-import utopia.reflection.component.drawing.template.{CustomDrawer, DrawLevel}
 import vf.prototyper.model.event.CanvasEvent.{ClickEvent, DragEvent}
 import vf.prototyper.model.event.CanvasListener
 import vf.prototyper.model.mutable.ViewBuilder
@@ -22,7 +26,7 @@ import vf.prototyper.util.Common.Colors._
 /**
  * Used for controlling the canvas view
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHierarchy)
 {
@@ -30,8 +34,8 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 	
 	private val minDragDistance = 25
 	
-	private lazy val leftDragColor = primary.forBackgroundPreferringLight(Color.white).withAlpha(0.5)
-	private lazy val linkColor = secondary.forBackgroundPreferringLight(Color.white).withAlpha(0.33)
+	private lazy val leftDragColor = primary.against(Color.white, Light).withAlpha(0.5)
+	private lazy val linkColor = secondary.against(Color.white, Light).withAlpha(0.33)
 	
 	private val maxImageSize = Screen.size * Vector2D(1, 0.8)
 	private val imagePointer = viewPointer.map { _.image.fittingWithin(maxImageSize) }
@@ -40,7 +44,7 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 	 * The controlled view
 	 */
 	val view = ViewImageLabel(hierarchy)
-		.withStaticLayout(imagePointer, customDrawers = Vector(LinksDrawer, CanvasMouseListener))
+		.withCustomDrawers(Vector(LinksDrawer, CanvasMouseListener))(imagePointer)
 	
 	private var listeners = Vector[CanvasListener]()
 	
@@ -69,15 +73,19 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 	
 	private object LinksDrawer extends CustomDrawer
 	{
+		// ATTRIBUTES   --------------------
+		
+		private implicit val ds: DrawSettings = DrawSettings.onlyFill(linkColor)
+		
+		
 		// IMPLEMENTED  --------------------
 		
 		override def opaque: Boolean = false
 		override def drawLevel: DrawLevel = Foreground
 		
 		override def draw(drawer: Drawer, bounds: Bounds): Unit = {
-			val d = drawer.onlyFill(linkColor)
 			currentView.links.foreach { link =>
-				d.draw(link.area * bounds.size + bounds.position)
+				drawer.draw(link.area * bounds.size + bounds.position)
 			}
 		}
 	}
@@ -88,19 +96,19 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 		
 		private var atClickButton: MouseButton = MouseButton.Left
 		
-		private val dragPointer = PointerWithEvents.empty[Pair[Point]]()
+		private val dragPointer = EventfulPointer.empty[Pair[Point]]()
 		
 		private val dragBoundsPointer = dragPointer.map { _.map(Bounds.between) }
-		private val isDraggingPointer = dragPointer.lazyMap { _.isDefined }
+		private val isDraggingPointer: FlagLike = dragPointer.strongMap { _.isDefined }
 		
-		override val mouseButtonStateEventFilter = MouseEvent.isOverAreaFilter(view.bounds)
+		override val mouseButtonStateEventFilter = MouseEvent.filter.over(view.bounds)
 		
 		
 		// INITIAL CODE --------------------
 		
 		// Repaints when drag changes
 		dragBoundsPointer.addContinuousListener { event =>
-			view.repaintArea(Bounds.around(event.toPair.flatten).enlarged(Size.square(2)) - view.position, Low)
+			view.repaintArea(Bounds.around(event.values.flatten).enlarged(2) - view.position, Low)
 		}
 		
 		
@@ -113,16 +121,15 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 		
 		override def opaque: Boolean = false
 		override def drawLevel: DrawLevel = Foreground
-		override def allowsHandlingFrom(handlerType: HandlerType): Boolean =
-			handlerType != MouseMoveHandlerType || isDragging
 		
-		override def onMouseButtonState(event: MouseButtonStateEvent): Option[ConsumeEvent] = {
+		override def handleCondition: FlagLike = AlwaysTrue
+		override def mouseMoveEventFilter: Filter[MouseMoveEvent] = AcceptAll
+		
+		override def onMouseButtonStateEvent(event: MouseButtonStateEvent) = {
 			// Case: Drag or click start
-			if (event.isDown) {
-				event.button.foreach { button =>
-					atClickButton = button
-					dragPointer.value = Some(Pair(event.mousePosition, event.mousePosition))
-				}
+			if (event.pressed) {
+				atClickButton = event.button
+				dragPointer.value = Some(Pair.twice(event.position.relative))
 			}
 			// Case: Drag or click end / release
 			else {
@@ -130,7 +137,7 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 				dragPointer.pop().foreach { drag =>
 					// Case: Too short a distance for drag => click
 					if (drag.merge { _ - _ }.length < minDragDistance) {
-						lazy val clickEvent = ClickEvent(toCanvasCoordinate(event.mousePosition), atClickButton)
+						lazy val clickEvent = ClickEvent(toCanvasCoordinate(event.position), atClickButton)
 						listeners.foreach { _.onClick(clickEvent) }
 					}
 					// Case: Drag
@@ -140,22 +147,23 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 					}
 				}
 			}
-			None
 		}
 		
 		// Updates the drag coordinates
-		override def onMouseMove(event: MouseMoveEvent): Unit =
-			dragPointer.update { _.map { _.withSecond(event.mousePosition) } }
+		override def onMouseMove(event: MouseMoveEvent): Unit = {
+			if (isDragging)
+				dragPointer.update { _.map { _.withSecond(event.position) } }
+		}
 		
 		override def draw(drawer: Drawer, bounds: Bounds): Unit = {
 			dragBoundsPointer.value.foreach { drag =>
-				val d = {
+				implicit val ds: DrawSettings = {
 					if (atClickButton == MouseButton.Left)
-						drawer.onlyEdges(leftDragColor).withStroke(2)
+						StrokeSettings(leftDragColor, 2)
 					else
-						drawer.onlyFill(linkColor)
+						DrawSettings.onlyFill(linkColor)
 				}
-				d.draw(drag)
+				drawer.draw(drag)
 			}
 		}
 		

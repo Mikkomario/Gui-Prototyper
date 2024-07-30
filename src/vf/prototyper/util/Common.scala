@@ -1,30 +1,35 @@
 package vf.prototyper.util
 
+import utopia.firmament.context.{BaseContext, ScrollingContext}
+import utopia.firmament.localization.{Localizer, NoLocalization}
+import utopia.firmament.model.Margins
+import utopia.firmament.model.enumeration.WindowResizePolicy.Program
 import utopia.flow.async.context.ThreadPool
+import utopia.flow.collection.immutable.Pair
 import utopia.flow.parse.file.FileExtensions._
 import utopia.flow.util.StringExtensions._
+import utopia.flow.util.TryCatch
 import utopia.flow.util.logging.{Logger, SysErrLogger}
-import utopia.genesis.handling.ActorLoop
-import utopia.genesis.handling.mutable.ActorHandler
+import utopia.genesis.handling.action.{ActionLoop, ActorHandler}
+import utopia.genesis.handling.event.keyboard.KeyboardEvents
+import utopia.genesis.text.Font
 import utopia.genesis.util.Screen
+import utopia.paradigm.color.{ColorScheme, ColorSet}
 import utopia.paradigm.measurement.DistanceExtensions._
 import utopia.paradigm.measurement.Ppi
-import utopia.paradigm.shape.shape2d.Point
+import utopia.paradigm.shape.shape2d.vector.point.Point
+import utopia.reach.component.input.selection.DropDown
+import utopia.reach.context.ReachContentWindowContext
 import utopia.reach.cursor.{CursorSet, CursorType}
-import utopia.reflection.color.{ColorScheme, ColorSet}
-import utopia.reflection.component.context.{BaseContext, ScrollingContext}
-import utopia.reflection.localization.{Localizer, NoLocalization}
-import utopia.reflection.shape.Margins
-import utopia.reflection.text.Font
+import vf.prototyper.view.Icon
 
 import java.nio.file.Paths
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
 
 /**
  * An interface for commonly used / shared values and items
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 object Common
 {
@@ -37,7 +42,7 @@ object Common
 	/**
 	 * Execution context used for multi-threading
 	 */
-	implicit val exc: ExecutionContext = new ThreadPool("GUI-Prototyper").executionContext
+	implicit val exc: ExecutionContext = new ThreadPool("GUI-Prototyper")
 	/**
 	 * Pixels per inch of the local screen
 	 */
@@ -59,7 +64,7 @@ object Common
 	 */
 	implicit val localizer: Localizer = NoLocalization
 	
-	private val actorLoop = new ActorLoop(actorHandler)
+	private val actorLoop = new ActionLoop(actorHandler)
 	
 	/**
 	 * The standard margins used
@@ -80,11 +85,11 @@ object Common
 				(Text, ("cursor-text", Point(12, 12)))
 			).view.mapValues { case (name, origin) =>
 				cursorDirectory/name.endingWith(".png") -> origin
-			}.toMap) match {
-				case Success((failures, cursors)) =>
+			}.toMap, drawEdgesFor = Set(Default, Interactive)) match {
+				case TryCatch.Success(cursors, failures) =>
 					failures.headOption.foreach { error => log(error, s"Failed to load ${ failures.size } cursors") }
 					Some(cursors)
-				case Failure(error) =>
+				case TryCatch.Failure(error) =>
 					log(error, "Failed to load cursors")
 					None
 			}
@@ -94,6 +99,9 @@ object Common
 	// INITIAL CODE ------------------------
 	
 	actorLoop.runAsync()
+	
+	KeyboardEvents.specifyExecutionContext(exc)
+	KeyboardEvents.setupKeyDownEvents(actorHandler)
 	
 	
 	// COMPUTED ----------------------------
@@ -114,6 +122,10 @@ object Common
 	 * @return Access point to various lengths
 	 */
 	def length = Lengths
+	/**
+	 * @return Access point to various pre-initialized component setups
+	 */
+	def component = Components
 	
 	
 	// NESTED   ----------------------------
@@ -150,7 +162,7 @@ object Common
 		/**
 		 * Color scheme used
 		 */
-		val scheme = ColorScheme.twoTone(primary, secondary, gray)
+		val scheme = ColorScheme.default ++ ColorScheme.twoTone(primary, secondary)
 		
 		
 		// COMPUTED --------------------------
@@ -158,7 +170,7 @@ object Common
 		/**
 		 * The gray color set
 		 */
-		def gray = ColorScheme.defaultLightGray
+		def gray = scheme.gray
 	}
 	
 	object Context
@@ -167,6 +179,14 @@ object Common
 		 * The basic component creation context
 		 */
 		val base = BaseContext(actorHandler, Font("Arial", 0.6.cm.toPixels.toInt), Colors.scheme, margins)
+		
+		/**
+		 * Component creation context for windows
+		 */
+		implicit val window: ReachContentWindowContext =
+			ReachContentWindowContext(base.against(Colors.gray.light).forTextComponents)
+				.withWindowBordersEnabled(enabled = true).withResizeLogic(Program)
+				.withCursors(cursors)
 	}
 	
 	object Lengths
@@ -180,5 +200,13 @@ object Common
 			 */
 			val medium = 6.cm.toPixels.toInt
 		}
+	}
+	
+	object Components
+	{
+		/**
+		 * A drop-down component setup with the correct arrow icons
+		 */
+		lazy val dropDown = DropDown.withExpandAndCollapseIcon(Pair(Icon.arrowDown, Icon.arrowUp).map { _.small })
 	}
 }

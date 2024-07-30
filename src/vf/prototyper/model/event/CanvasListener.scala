@@ -5,7 +5,7 @@ import vf.prototyper.model.event.CanvasEvent.{ClickEvent, DragEvent}
 /**
  * Listeners that are informed about canvas events
  * @author Mikko Hilpinen
- * @since 16.2.2023, v0.1
+ * @since 16.2.2023, v1.0
  */
 trait CanvasListener
 {

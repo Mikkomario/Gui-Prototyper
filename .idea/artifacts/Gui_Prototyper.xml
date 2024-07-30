@@ -1,0 +1,20 @@
+<component name="ArtifactManager">
+  <artifact name="Gui-Prototyper">
+    <output-path>$PROJECT_DIR$/out/artifacts/Gui-Prototyper</output-path>
+    <root id="root">
+      <element id="archive" name="Gui-Prototyper.jar">
+        <element id="module-output" name="Gui-Prototyper" />
+        <element id="module-output" name="BunnyMunch" />
+        <element id="module-output" name="Flow" />
+        <element id="module-output" name="Firmament" />
+        <element id="module-output" name="Genesis" />
+        <element id="module-output" name="Paradigm" />
+        <element id="module-output" name="Reach" />
+      </element>
+      <element id="library" level="application" name="scala-sdk-2.13.12" />
+      <element id="directory" name="data">
+        <element id="dir-copy" path="$PROJECT_DIR$/data" />
+      </element>
+    </root>
+  </artifact>
+</component>

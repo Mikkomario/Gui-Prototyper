@@ -1,11 +1,11 @@
 package vf.prototyper.view
 
+import utopia.firmament.image.SingleColorIcon
 import utopia.flow.parse.file.FileExtensions._
 import utopia.flow.util.StringExtensions._
 import utopia.genesis.image.Image
 import utopia.paradigm.measurement.DistanceExtensions._
-import utopia.paradigm.shape.shape2d.Size
-import utopia.reflection.image.SingleColorIcon
+import utopia.paradigm.shape.shape2d.vector.size.Size
 import vf.prototyper.util.Common._
 import vf.prototyper.view.Icon.{largeSize, mediumSize, smallSize}
 
@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 /**
  * An access point for icons
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 object Icon
 {
@@ -110,7 +110,7 @@ object Icon
 	def one(isFilled: Boolean) = if (isFilled) oneFilled else oneEmpty
 	
 	private def load(name: String) = Image.readFrom(iconsDir / name.endingWith(".png")) match {
-		case Success(img) => new Icon(new SingleColorIcon(img))
+		case Success(img) => new Icon(SingleColorIcon(img))
 		case Failure(error) =>
 			log(error, s"Failed to load image named '$name'")
 			empty

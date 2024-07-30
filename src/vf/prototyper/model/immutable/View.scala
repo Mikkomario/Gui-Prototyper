@@ -11,8 +11,9 @@ import utopia.flow.generic.model.mutable.DataType.{IntType, StringType}
 import utopia.flow.view.mutable.Pointer
 import utopia.genesis.image.{Image, Pixels}
 import utopia.paradigm.color.Color
-import utopia.paradigm.shape.shape2d.{Bounds, Size}
 import utopia.paradigm.generic.ParadigmValue._
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.vector.size.Size
 import vf.prototyper.util.Common._
 
 import java.nio.file.{Path, Paths}
@@ -23,7 +24,7 @@ object View extends FromModelFactory[View]
 {
 	private lazy val schema = ModelDeclaration("id" -> IntType, "name" -> StringType, "path" -> StringType)
 	
-	override def apply(model: ModelLike[Property]): Try[View] = schema.validate(model).toTry.flatMap { model =>
+	override def apply(model: ModelLike[Property]): Try[View] = schema.validate(model).flatMap { model =>
 		model("links").tryVectorWith { v => Link(v.getModel) }.map { links =>
 			apply(model("id").getInt, model("name").getString, Paths.get(model("path").getString),
 				model("region").bounds, links)
@@ -34,7 +35,7 @@ object View extends FromModelFactory[View]
 /**
  * Represents a single UI view
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  * @param id Unique id of this view
  * @param name Name of this view
  * @param path Path to the used image file
@@ -92,7 +93,7 @@ case class View(id: Int, name: String, path: Path, region: Option[Bounds] = None
 		if (links.nonEmpty) {
 			println("Starting image conversion")
 			// Converts link area hues
-			val linkColor = color.secondary.dark.background
+			val linkColor = color.secondary.dark
 			val linkLuminosity = linkColor.luminosity
 			
 			def replaceColor(color: Color) = if (color.luminosity <= linkLuminosity) linkColor else color

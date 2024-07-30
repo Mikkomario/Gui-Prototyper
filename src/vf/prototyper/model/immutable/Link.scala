@@ -2,12 +2,12 @@ package vf.prototyper.model.immutable
 
 import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
 import utopia.flow.generic.model.template.ModelConvertible
-import utopia.paradigm.shape.shape2d.Bounds
 import utopia.flow.generic.casting.ValueConversions._
 import utopia.flow.generic.factory.FromModelFactoryWithSchema
 import utopia.flow.generic.model.mutable.DataType.IntType
 import utopia.paradigm.generic.ParadigmDataType.BoundsType
 import utopia.paradigm.generic.ParadigmValue._
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
 
 object Link extends FromModelFactoryWithSchema[Link]
 {
@@ -20,7 +20,7 @@ object Link extends FromModelFactoryWithSchema[Link]
 /**
  * Represents a link to another view
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  * @param area Area from which this link is triggered.
  *             (0,0) is top-left corner of the parent view. (1,1) is the bottom right corner.
  * @param targetId Id of the referred view

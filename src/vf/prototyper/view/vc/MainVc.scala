@@ -1,22 +1,19 @@
 package vf.prototyper.view.vc
 
-import utopia.flow.operator.EqualsFunction
+import utopia.firmament.controller.data.ContainerContentDisplayer
+import utopia.flow.operator.equality.EqualsFunction
 import utopia.flow.view.mutable.async.Volatile
-import utopia.flow.view.mutable.eventful.PointerWithEvents
-import utopia.paradigm.enumeration.Alignment.TopLeft
+import utopia.flow.view.mutable.eventful.EventfulPointer
+import utopia.paradigm.color.ColorRole.Primary
+import utopia.paradigm.color.ColorShade.Dark
 import utopia.reach.component.button.image.ImageButton
 import utopia.reach.component.factory.Mixed
 import utopia.reach.component.label.text.TextLabel
 import utopia.reach.component.wrapper.Open
 import utopia.reach.container.ReachCanvas
-import utopia.reach.container.multi.stack.{MutableStack, Stack}
+import utopia.reach.container.multi.{MutableStack, Stack}
 import utopia.reach.container.wrapper.Framing
-import utopia.reflection.component.drawing.immutable.BackgroundDrawer
-import utopia.reflection.container.stack.StackLayout.Center
-import utopia.reflection.container.swing.window.Frame
-import utopia.reflection.container.swing.window.WindowResizePolicy.Program
-import utopia.reflection.controller.data.ContainerContentDisplayer2
-import utopia.reflection.shape.LengthExtensions._
+import utopia.reach.window.ReachWindow
 import vf.prototyper.model.immutable.Project
 import vf.prototyper.util.Common._
 import vf.prototyper.view.Icon
@@ -25,7 +22,7 @@ import vf.prototyper.view.component.ProjectRow
 /**
  * The main view-controller. Used for selecting the target project and for starting new projects.
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 class MainVc(initialProjects: Vector[Project])
 {
@@ -33,45 +30,44 @@ class MainVc(initialProjects: Vector[Project])
 	
 	private val openProjectIdsPointer = Volatile(Set[String]())
 	
-	private val projectsPointer = new PointerWithEvents(initialProjects)
+	private val projectsPointer = EventfulPointer(initialProjects)
 	
-	// The view consists of a header and a projects -list
-	private val view = ReachCanvas(cursors) { hierarchy =>
-		Stack(hierarchy).withContext(context.base).build(Framing).withoutMargin() { framingF =>
-			implicit def canvas: ReachCanvas = hierarchy.top
+	private val window = ReachWindow.withContext(Context.window).using(Stack) { (canvas, stackF) =>
+		implicit val c: ReachCanvas = canvas
+		// The view consists of a header and a projects -list
+		stackF.withoutMargin.build(Framing) { framingF =>
 			// Header
 			// [ Projects | + ]
 			val headerBg = color.primary.dark
-			val header = framingF.mapContext { _.inContextWithBackground(headerBg) }.build(Stack)
-				.apply(margins.small.any, Vector(BackgroundDrawer(headerBg))) { stackF =>
-					stackF.build(Mixed).row(Center) { factories =>
-						// The header contains a title label and a button for adding new projects
-						val titleLabel = factories
-							.mapContext { _.forTextComponents.mapFont { _ * 1.2 }.expandingToRight }(TextLabel)
-							.apply("Projects")
-						val newButton = factories(ImageButton).withIcon(Icon.addCircle.large) { newProject() }
-						Vector(titleLabel, newButton)
-					}
+			val header = framingF.withBackground(Primary, Dark).small.build(Stack) { stackF =>
+				stackF.centeredRow.build(Mixed) { factories =>
+					// The header contains a title label and a button for adding new projects
+					val titleLabel = factories
+						.mapContext { _.mapFont { _ * 1.2 }.withTextExpandingToRight }(TextLabel)
+						.apply("Projects")
+					val newButton = factories(ImageButton).icon(Icon.addCircle.large) { newProject() }
+					Vector(titleLabel, newButton)
 				}
+			}
 			// The projects list is mutable and separately managed
-			val listBg = color.gray.forBackgroundPreferringLight(headerBg)
-			val listFramingF = framingF.mapContext { _.inContextWithBackground(listBg) }
-			val (projectsFrame, projectsStack) = listFramingF.build(MutableStack)
-				.apply(margins.small.any, Vector(BackgroundDrawer(listBg))) { stackF =>
-					stackF.apply[ProjectRow](areRelated = true)
-				}.toTuple
+			val (projectsFrame, projectsStack) = framingF.small.build(MutableStack) { stackF =>
+				stackF.related.apply[ProjectRow]()
+			}.toTuple
 			// Sets up content management for the stack
-			ContainerContentDisplayer2.forImmutableStates(projectsStack, projectsPointer) {
+			ContainerContentDisplayer.forImmutableStates(projectsStack, projectsPointer) {
 				EqualsFunction.by { p: Project => p.id }(EqualsFunction.default)
 			} { project =>
-				Open.withContext(ProjectRow, listFramingF.context.forTextComponents) {
+				Open.withContext(framingF.context)(ProjectRow) {
 					_.apply(project)(viewProject)(editProject)(deleteProject)
 				}
 			}
 			
 			Vector(header.parent, projectsFrame)
 		}
-	}.parent
+	}
+	
+	
+	// INITIAL CODE ----------------------
 	
 	// TODO: Remove test prints
 	openProjectIdsPointer.addContinuousListener { e => println(s"${ e.newValue.size } projects open") }
@@ -90,10 +86,8 @@ class MainVc(initialProjects: Vector[Project])
 	 * @return Future that resolves once all resulting windows have closed
 	 */
 	def display() = {
-		val frame = Frame.windowed(view, "GUI-Prototyper", Program, margins.medium, getAnchor = TopLeft.origin)
-		frame.startEventGenerators(actorHandler)
-		frame.visible = true
-		frame.closeFuture.flatMap { _ =>
+		window.display(centerOnParent = true)
+		window.closeFuture.flatMap { _ =>
 			openProjectIdsPointer.findMapFuture { p => if (p.isEmpty) Some(()) else None }
 		}
 	}
@@ -125,7 +119,7 @@ class MainVc(initialProjects: Vector[Project])
 	}
 	
 	// Returns true if can open
-	private def tryOpen(project: Project) = openProjectIdsPointer.pop { ids =>
+	private def tryOpen(project: Project) = openProjectIdsPointer.mutate { ids =>
 		if (ids.contains(project.id))
 			false -> ids
 		else

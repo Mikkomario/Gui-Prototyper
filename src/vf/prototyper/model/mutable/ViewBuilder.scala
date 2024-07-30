@@ -1,8 +1,8 @@
 package vf.prototyper.model.mutable
 
-import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.genesis.image.Image
-import utopia.paradigm.shape.shape2d.Bounds
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
 import vf.prototyper.model.immutable.View
 
 import java.nio.file.Path
@@ -21,7 +21,7 @@ object ViewBuilder
 /**
  * A mutable builder used for constructing views in edit mode
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  * @param id Unique id of this view
  * @param initialName The initial name of this view
  * @param path Path to the image file used in this view
@@ -35,11 +35,11 @@ class ViewBuilder(val id: Int, initialName: String, val path: Path, val image: I
 	/**
 	 * A mutable pointer to the name of this view
 	 */
-	val namePointer = new PointerWithEvents(initialName)
+	val namePointer = EventfulPointer(initialName)
 	/**
 	 * A mutable pointer to the links within this view, each being represented with a mutable version
 	 */
-	val linksPointer = new PointerWithEvents(Vector[LinkBuilder]())
+	val linksPointer = EventfulPointer(Vector[LinkBuilder]())
 	
 	
 	// COMPUTED -----------------------------

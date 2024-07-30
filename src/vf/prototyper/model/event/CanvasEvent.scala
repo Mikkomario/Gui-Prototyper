@@ -1,15 +1,16 @@
 package vf.prototyper.model.event
 
-import utopia.genesis.event.{KeyStatus, MouseButton}
-import utopia.genesis.view.GlobalKeyboardEventHandler
-import utopia.paradigm.shape.shape2d.{Bounds, Point}
+import utopia.genesis.handling.event.keyboard.{KeyboardEvents, KeyboardState}
+import utopia.genesis.handling.event.mouse.MouseButton
+import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
+import utopia.paradigm.shape.shape2d.vector.point.Point
 
 import java.awt.event.KeyEvent
 
 /**
  * Common trait for different events triggered from a canvas component
  * @author Mikko Hilpinen
- * @since 16.2.2023, v0.1
+ * @since 16.2.2023, v1.0
  */
 sealed trait CanvasEvent
 {
@@ -18,7 +19,7 @@ sealed trait CanvasEvent
 	/**
 	 * @return The keyboard state during this event
 	 */
-	def keyState: KeyStatus
+	def keyState: KeyboardState
 	/**
 	 * @return The mouse button used in this event
 	 */
@@ -46,7 +47,7 @@ object CanvasEvent
 	 * @param keyState    Keystate during the drag (default = current key status)
 	 */
 	case class DragEvent(area: Bounds, mouseButton: MouseButton = MouseButton.Left,
-	                     keyState: KeyStatus = GlobalKeyboardEventHandler.keyStatus)
+	                     keyState: KeyboardState = KeyboardEvents.state)
 		extends CanvasEvent
 	
 	/**
@@ -56,6 +57,6 @@ object CanvasEvent
 	 * @param keyState    Keystate during the click (default = current key status)
 	 */
 	case class ClickEvent(point: Point, mouseButton: MouseButton = MouseButton.Left,
-	                      keyState: KeyStatus = GlobalKeyboardEventHandler.keyStatus)
+	                      keyState: KeyboardState = KeyboardEvents.state)
 		extends CanvasEvent
 }
