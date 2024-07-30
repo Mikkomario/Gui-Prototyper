@@ -35,7 +35,7 @@ object StartProjectEditVc
 /**
  * Controls a view used for starting a new project
  * @author Mikko Hilpinen
- * @since 19.2.2023, v0.1
+ * @since 19.2.2023, v1.0
  */
 class StartProjectEditVc(project: Option[Project] = None)
 {

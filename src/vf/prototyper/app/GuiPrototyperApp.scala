@@ -9,7 +9,7 @@ import vf.prototyper.view.vc.{MainVc, StartProjectEditVc}
 /**
  * The main application class of this project
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 object GuiPrototyperApp extends App
 {

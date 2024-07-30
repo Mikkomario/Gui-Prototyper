@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 /**
  * An access point for icons
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 object Icon
 {

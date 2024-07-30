@@ -7,7 +7,7 @@ import vf.prototyper.model.immutable.Link
 /**
  * A mutable link implementation used during view-building
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  * @param area The area where this link is triggered from
  */
 class LinkBuilder(val area: Bounds, initialTarget: ViewBuilder)

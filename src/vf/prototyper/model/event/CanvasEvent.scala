@@ -10,7 +10,7 @@ import java.awt.event.KeyEvent
 /**
  * Common trait for different events triggered from a canvas component
  * @author Mikko Hilpinen
- * @since 16.2.2023, v0.1
+ * @since 16.2.2023, v1.0
  */
 sealed trait CanvasEvent
 {

@@ -20,7 +20,7 @@ import vf.prototyper.view.component.ViewCanvas
 /**
  * Control the presentation view
  * @author Mikko Hilpinen
- * @since 20.2.2023, v0.1
+ * @since 20.2.2023, v1.0
  */
 class PresentationVc(project: Project)
 {

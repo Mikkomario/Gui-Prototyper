@@ -29,7 +29,7 @@ import vf.prototyper.view.Icon
 /**
  * Controls the main editing view
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 class EditVc(original: Vector[View])
 {

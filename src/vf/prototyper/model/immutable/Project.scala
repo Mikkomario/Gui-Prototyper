@@ -62,7 +62,7 @@ object Project
 /**
  * Represents a project or an application, which consists of multiple views
  * @author Mikko Hilpinen
- * @since 19.2.2023, v0.1
+ * @since 19.2.2023, v1.0
  * @param id Unique id of this project
  * @param name Name of this project
  * @param path to this project's json file

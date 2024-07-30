@@ -21,7 +21,7 @@ object ViewBuilder
 /**
  * A mutable builder used for constructing views in edit mode
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  * @param id Unique id of this view
  * @param initialName The initial name of this view
  * @param path Path to the image file used in this view

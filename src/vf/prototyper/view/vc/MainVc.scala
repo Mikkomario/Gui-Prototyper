@@ -22,7 +22,7 @@ import vf.prototyper.view.component.ProjectRow
 /**
  * The main view-controller. Used for selecting the target project and for starting new projects.
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 class MainVc(initialProjects: Vector[Project])
 {

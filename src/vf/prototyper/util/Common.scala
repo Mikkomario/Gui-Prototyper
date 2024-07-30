@@ -29,7 +29,7 @@ import scala.concurrent.ExecutionContext
 /**
  * An interface for commonly used / shared values and items
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 object Common
 {

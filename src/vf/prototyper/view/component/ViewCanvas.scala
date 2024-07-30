@@ -52,7 +52,7 @@ class ViewCanvasFactory(hierarchy: ComponentHierarchy)
 /**
  * Controls interactions with a presented canvas / view
  * @author Mikko Hilpinen
- * @since 20.2.2023, v0.1
+ * @since 20.2.2023, v1.0
  */
 class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[View], possibleViews: IterableOnce[View],
                  changeView: Int => Unit)

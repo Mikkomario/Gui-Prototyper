@@ -26,7 +26,7 @@ import vf.prototyper.util.Common.Colors._
 /**
  * Used for controlling the canvas view
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  */
 class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHierarchy)
 {

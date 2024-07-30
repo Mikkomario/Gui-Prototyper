@@ -35,7 +35,7 @@ object View extends FromModelFactory[View]
 /**
  * Represents a single UI view
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  * @param id Unique id of this view
  * @param name Name of this view
  * @param path Path to the used image file

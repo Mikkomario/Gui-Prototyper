@@ -59,7 +59,7 @@ case class ContextualFileDropAreaFactory(hierarchy: ComponentHierarchy, override
 /**
  * Used for accepting file drops from the user
  * @author Mikko Hilpinen
- * @since 19.2.2023, v0.1
+ * @since 19.2.2023, v1.0
  */
 class FileDropArea[A](hierarchy: ComponentHierarchy, context: TextContext,
                       resultsPointer: EventfulPointer[Vector[A]], parseFile: Path => Either[LocalizedString, A])

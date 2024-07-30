@@ -50,7 +50,7 @@ case class ContextualProjectRowFactory(hierarchy: ComponentHierarchy, override v
 /**
  * Displays a single project's information
  * @author Mikko Hilpinen
- * @since 20.2.2023, v0.1
+ * @since 20.2.2023, v1.0
  */
 class ProjectRow(hierarchy: ComponentHierarchy, context: TextContext, initialProject: Project,
                  viewAction: Project => Unit, editAction: Project => Unit, deleteAction: Project => Unit)

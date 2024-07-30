@@ -20,7 +20,7 @@ object Link extends FromModelFactoryWithSchema[Link]
 /**
  * Represents a link to another view
  * @author Mikko Hilpinen
- * @since 15.2.2023, v0.1
+ * @since 15.2.2023, v1.0
  * @param area Area from which this link is triggered.
  *             (0,0) is top-left corner of the parent view. (1,1) is the bottom right corner.
  * @param targetId Id of the referred view
