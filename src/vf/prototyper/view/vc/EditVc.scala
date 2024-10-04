@@ -42,11 +42,11 @@ class EditVc(original: Vector[View])
 	private var firstView = views.head
 	
 	private val currentViewPointer = EventfulPointer(firstView)
-	private val currentLinkPointer = EventfulPointer.empty[LinkBuilder]()
+	private val currentLinkPointer = EventfulPointer.empty[LinkBuilder]
 	
 	private val viewNameInputPointer = EventfulPointer(currentView.name)
 	private val isFirstViewPointer = ResettableFlag(initialValue = true)
-	private val selectedLinkTargetPointer = EventfulPointer.empty[ViewBuilder]()
+	private val selectedLinkTargetPointer = EventfulPointer.empty[ViewBuilder]
 	
 	private val isLinkSelectedPointer = currentLinkPointer.map { _.isDefined }
 	

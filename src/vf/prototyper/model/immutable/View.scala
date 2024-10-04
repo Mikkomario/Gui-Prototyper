@@ -3,11 +3,12 @@ package vf.prototyper.model.immutable
 import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.collection.immutable.range.NumericSpan
 import utopia.flow.collection.mutable.MutableMatrix
-import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
-import utopia.flow.generic.model.template.{ModelConvertible, ModelLike, Property}
 import utopia.flow.generic.casting.ValueConversions._
 import utopia.flow.generic.factory.FromModelFactory
+import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
 import utopia.flow.generic.model.mutable.DataType.{IntType, StringType}
+import utopia.flow.generic.model.template.{ModelConvertible, ModelLike, Property}
+import utopia.flow.util.TryExtensions._
 import utopia.flow.view.mutable.Pointer
 import utopia.genesis.image.{Image, Pixels}
 import utopia.paradigm.color.Color

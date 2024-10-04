@@ -28,7 +28,7 @@ class MainVc(initialProjects: Vector[Project])
 {
 	// ATTRIBUTES   -------------------------
 	
-	private val openProjectIdsPointer = Volatile(Set[String]())
+	private val openProjectIdsPointer = Volatile.eventful(Set[String]())
 	
 	private val projectsPointer = EventfulPointer(initialProjects)
 	
@@ -38,7 +38,6 @@ class MainVc(initialProjects: Vector[Project])
 		stackF.withoutMargin.build(Framing) { framingF =>
 			// Header
 			// [ Projects | + ]
-			val headerBg = color.primary.dark
 			val header = framingF.withBackground(Primary, Dark).small.build(Stack) { stackF =>
 				stackF.centeredRow.build(Mixed) { factories =>
 					// The header contains a title label and a button for adding new projects

@@ -3,6 +3,7 @@ package vf.prototyper.model.mutable
 import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.paradigm.shape.shape2d.area.polygon.c4.bounds.Bounds
 import vf.prototyper.model.immutable.Link
+import vf.prototyper.util.Common._
 
 /**
  * A mutable link implementation used during view-building

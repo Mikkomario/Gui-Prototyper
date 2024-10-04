@@ -6,7 +6,7 @@ import utopia.flow.collection.immutable.caching.cache.Cache
 import utopia.flow.operator.filter.Filter
 import utopia.flow.view.immutable.eventful.AlwaysTrue
 import utopia.flow.view.mutable.eventful.EventfulPointer
-import utopia.flow.view.template.eventful.{Changing, FlagLike}
+import utopia.flow.view.template.eventful.{Changing, Flag}
 import utopia.genesis.graphics.DrawLevel.Foreground
 import utopia.genesis.graphics.Priority.High
 import utopia.genesis.graphics.{DrawLevel, DrawSettings, Drawer, StrokeSettings}
@@ -131,7 +131,7 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		
 		// IMPLEMENTED  ------------------------
 		
-		override def handleCondition: FlagLike = AlwaysTrue
+		override def handleCondition: Flag = AlwaysTrue
 		
 		override def onMouseButtonStateEvent(event: MouseButtonStateEvent) = {
 			lazy val coordinates = (event.position - position) / size
@@ -158,7 +158,7 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		
 		private var currentDistance = 0.0
 		
-		private val pointsPointer = EventfulPointer(Vector[Point]())
+		private val pointsPointer = EventfulPointer.emptySeq[Point]
 		
 		private val imagePointer = pointsPointer.mapAsync(Image.empty, skipInitialMap = true) { points =>
 			if (points.size < 3)
@@ -196,7 +196,7 @@ class ViewCanvas(hierarchy: ComponentHierarchy, currentViewPointer: Changing[Vie
 		override def opaque: Boolean = false
 		override def drawLevel: DrawLevel = Foreground
 		
-		override def handleCondition: FlagLike = AlwaysTrue
+		override def handleCondition: Flag = AlwaysTrue
 		
 		override def draw(drawer: Drawer, bounds: Bounds): Unit = imagePointer.value.drawWith(drawer, bounds.position)
 		

@@ -41,8 +41,8 @@ class PresentationVc(project: Project)
 	private val currentViewPointer = EventfulPointer(views.head)
 	private val selectedViewPointer = EventfulPointer[Option[View]](Some(currentView))
 	
-	private val viewHistoryPointer = Pointer(Vector[View]())
-	private val undoHistoryPointer = Pointer(Vector[View]())
+	private val viewHistoryPointer = Pointer.emptySeq[View]
+	private val undoHistoryPointer = Pointer.emptySeq[View]
 	
 	
 	// INITIAL CODE --------------------------

@@ -1,13 +1,13 @@
 package vf.prototyper.model.immutable
 
 import utopia.bunnymunch.jawn.JsonBunny
-import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.generic.casting.ValueConversions._
 import utopia.flow.generic.factory.FromModelFactory
 import utopia.flow.generic.model.immutable.{Model, ModelDeclaration}
 import utopia.flow.generic.model.mutable.DataType.StringType
 import utopia.flow.generic.model.template.{ModelConvertible, ModelLike, Property}
 import utopia.flow.parse.file.FileExtensions._
+import utopia.flow.util.TryExtensions._
 import vf.prototyper.util.Common._
 
 import java.nio.file.Path

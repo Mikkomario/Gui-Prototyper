@@ -5,7 +5,7 @@ import utopia.flow.collection.immutable.Pair
 import utopia.flow.operator.filter.{AcceptAll, Filter}
 import utopia.flow.view.immutable.eventful.AlwaysTrue
 import utopia.flow.view.mutable.eventful.EventfulPointer
-import utopia.flow.view.template.eventful.{Changing, FlagLike}
+import utopia.flow.view.template.eventful.{Changing, Flag}
 import utopia.genesis.graphics.DrawLevel.Foreground
 import utopia.genesis.graphics.Priority.Low
 import utopia.genesis.graphics.{DrawLevel, DrawSettings, Drawer, StrokeSettings}
@@ -22,6 +22,7 @@ import vf.prototyper.model.event.CanvasEvent.{ClickEvent, DragEvent}
 import vf.prototyper.model.event.CanvasListener
 import vf.prototyper.model.mutable.ViewBuilder
 import vf.prototyper.util.Common.Colors._
+import vf.prototyper.util.Common._
 
 /**
  * Used for controlling the canvas view
@@ -96,10 +97,10 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 		
 		private var atClickButton: MouseButton = MouseButton.Left
 		
-		private val dragPointer = EventfulPointer.empty[Pair[Point]]()
+		private val dragPointer = EventfulPointer.empty[Pair[Point]]
 		
 		private val dragBoundsPointer = dragPointer.map { _.map(Bounds.between) }
-		private val isDraggingPointer: FlagLike = dragPointer.strongMap { _.isDefined }
+		private val isDraggingPointer: Flag = dragPointer.strongMap { _.isDefined }
 		
 		override val mouseButtonStateEventFilter = MouseEvent.filter.over(view.bounds)
 		
@@ -122,7 +123,7 @@ class EditCanvasVc(viewPointer: Changing[ViewBuilder], hierarchy: ComponentHiera
 		override def opaque: Boolean = false
 		override def drawLevel: DrawLevel = Foreground
 		
-		override def handleCondition: FlagLike = AlwaysTrue
+		override def handleCondition: Flag = AlwaysTrue
 		override def mouseMoveEventFilter: Filter[MouseMoveEvent] = AcceptAll
 		
 		override def onMouseButtonStateEvent(event: MouseButtonStateEvent) = {

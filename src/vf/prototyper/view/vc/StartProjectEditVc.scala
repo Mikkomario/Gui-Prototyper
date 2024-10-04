@@ -1,11 +1,11 @@
 package vf.prototyper.view.vc
 
 import utopia.firmament.model.stack.LengthExtensions._
-import utopia.flow.collection.CollectionExtensions._
 import utopia.flow.parse.file.FileConflictResolution.Rename
 import utopia.flow.parse.file.FileExtensions._
 import utopia.flow.parse.string.Regex
 import utopia.flow.util.StringExtensions._
+import utopia.flow.util.TryExtensions._
 import utopia.flow.view.mutable.caching.ResettableLazy
 import utopia.flow.view.mutable.eventful.EventfulPointer
 import utopia.paradigm.color.ColorRole.{Primary, Secondary}
